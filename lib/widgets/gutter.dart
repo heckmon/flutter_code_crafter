@@ -72,7 +72,8 @@ class _GutterState extends State<Gutter> {
               return Column(
                 children: lines.map((line){
                   return GutterItem(
-                    gutterStyle: widget.gutterStyle.lineNumberStyle,
+                    lineNumberAlignment: widget.gutterStyle.lineNumberAlignment,
+                    lineNumberStyle: widget.gutterStyle.lineNumberStyle,
                     leftItem: widget.enableBreakPoints ? GestureDetector(
                       onTap: () {
                         final index = line.lineNumber - 1;
@@ -122,11 +123,13 @@ class GutterItem extends StatelessWidget {
   final Widget leftItem;
   final Widget rightItem;
   final int linNumber;
-  final TextStyle? gutterStyle;
+  final TextStyle? lineNumberStyle;
+  final LineNumberAlignment lineNumberAlignment;
   const GutterItem(
     this.linNumber,{
       super.key, 
-      this.gutterStyle,
+      required this.lineNumberAlignment,
+      this.lineNumberStyle,
       this.leftItem = const SizedBox(),
       this.rightItem = const SizedBox()
     }
@@ -135,15 +138,24 @@ class GutterItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      mainAxisAlignment: ((){
+        switch(lineNumberAlignment) {
+          case LineNumberAlignment.center:
+            return MainAxisAlignment.spaceEvenly;
+          case LineNumberAlignment.left:
+            return MainAxisAlignment.start;
+          case LineNumberAlignment.right:
+            return MainAxisAlignment.end;
+        }
+      })(),
       children: [
         leftItem,
         Text(
           linNumber.toString(), 
           style: ((){
-            if(gutterStyle != null) {
-              return gutterStyle!.copyWith(
-                color: gutterStyle?.color ?? Shared().theme['root']?.color,
+            if(lineNumberStyle != null) {
+              return lineNumberStyle!.copyWith(
+                color: lineNumberStyle?.color ?? Shared().theme['root']?.color,
                 height: 1.5,
               );
             } else if(Shared().textStyle != null) {
@@ -184,16 +196,24 @@ class GutterStyle{
   final double? breakpointSize, gutterWidth;
   final double gutterRightMargin, gutterLeftMargin;
   final IconData breakpointIcon, unfilledBreakpointIcon;
+  final LineNumberAlignment lineNumberAlignment;
   GutterStyle({
     this.lineNumberStyle,
     this.dividerColor,
     this.gutterWidth,
     this.gutterRightMargin = 10,
     this.gutterLeftMargin = 10,
+    this.lineNumberAlignment = LineNumberAlignment.center,
     this.breakpointIcon = Icons.circle,
     this.unfilledBreakpointIcon = Icons.circle_outlined,
     this.breakpointSize,
     this.breakpointColor = Colors.red,
     this.unfilledBreakpointColor = Colors.transparent
   });
+}
+
+enum LineNumberAlignment {
+  center,
+  left,
+  right,
 }
