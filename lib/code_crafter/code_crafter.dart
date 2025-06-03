@@ -1,23 +1,27 @@
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_code_crafter/code_crafter/code_crafter_controller.dart';
 import 'package:flutter_code_crafter/utils/shared.dart';
 import 'package:flutter_code_crafter/widgets/gutter.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 class CodeCrafter extends StatefulWidget {
   final CodeCrafterController controller;
   final TextStyle? textStyle;
-  final Color? cursorColor, backgroundCursorColor;
+  final Color? cursorColor, selectionColor, selectionHandleColor;
   final Map<String, TextStyle>? editorTheme;
   final int tabSize;
-
+  final GutterStyle? gutterStyle;
+  final bool enableBreakPoints;
   const CodeCrafter({
     super.key,
     required this.controller,
     this.textStyle,
-    this.cursorColor,
-    this.backgroundCursorColor,
+    this.gutterStyle,
     this.editorTheme,
+    this.selectionHandleColor,
+    this.selectionColor,
+    this.cursorColor,
+    this.enableBreakPoints = true,
     this.tabSize = 4,
   });
 
@@ -82,7 +86,11 @@ class _CodeCrafterState extends State<CodeCrafter> {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Gutter(),
+                    Gutter(
+                      widget.gutterStyle ?? GutterStyle(
+                        unfilledBreakpointColor: widget.editorTheme?['root']?.color ?? Colors.grey
+                      ),
+                      widget.enableBreakPoints,),
                     Expanded(
                       child: KeyboardListener(
                         focusNode: _keyboardFocus,
@@ -100,9 +108,8 @@ class _CodeCrafterState extends State<CodeCrafter> {
                         child: Theme(
                           data: ThemeData(
                             textSelectionTheme: TextSelectionThemeData(
-                              selectionColor: null,
-                              cursorColor: null,
-                              selectionHandleColor: null
+                              selectionColor: widget.selectionColor,
+                              selectionHandleColor: widget.selectionHandleColor
                             )
                           ),
                           child: TextField(
@@ -115,8 +122,11 @@ class _CodeCrafterState extends State<CodeCrafter> {
                             ),
                             maxLines: null,
                             showCursor: true,
-                            style: widget.textStyle,
-                            cursorHeight: widget.textStyle?.fontSize ?? 17,
+                            style: widget.textStyle ?? TextStyle(
+                              height: 1.5,
+                              fontSize: 14
+                            ),
+                            cursorHeight: widget.textStyle?.fontSize ?? 14,
                             controller: widget.controller,
                             cursorColor:widget.cursorColor ?? widget.editorTheme?['root']?.color ?? Colors.white,
                             cursorWidth: 2,

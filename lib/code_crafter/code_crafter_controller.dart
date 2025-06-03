@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_code_crafter/utils/shared.dart';
+import 'package:flutter/material.dart';
 import 'package:highlight/highlight.dart';
 
 class CodeCrafterController extends TextEditingController{
