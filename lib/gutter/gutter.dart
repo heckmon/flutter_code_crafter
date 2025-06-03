@@ -1,6 +1,7 @@
 import 'dart:math';
 import 'package:flutter_code_crafter/code_crafter/code_crafter_controller.dart';
 import 'package:flutter_code_crafter/utils/shared.dart';
+import 'package:flutter_code_crafter/gutter/gutter_style.dart';
 import 'package:flutter/material.dart';
 
 
@@ -22,7 +23,14 @@ class _GutterState extends State<Gutter> {
 
   @override
   void initState() {
-    _lineStates =  _lineStates = ValueNotifier(List.generate(lineNumber, (index) => LineState(lineNumber: index + 1)));
+    final lineMetrics = TextPainter(
+      textDirection: TextDirection.ltr,
+      text: TextSpan(text: _controller.text),
+    )..layout();
+
+    lineNumber = lineMetrics.computeLineMetrics().length;
+
+    _lineStates = ValueNotifier(List.generate(lineNumber, (index) => LineState(lineNumber: index + 1)));
     _controller.addListener((){
       _textPainter = TextPainter(
         textDirection: TextDirection.ltr,
@@ -43,6 +51,7 @@ class _GutterState extends State<Gutter> {
         setState(() {
           lineNumber = _textPainter.computeLineMetrics().length;
           _lineStates.value =  updatedStates;
+          getFoldRanges(_controller.text, _lineStates);
         });
       }
       int digitCount = max(3, lineNumber.toString().length);
@@ -81,7 +90,6 @@ class _GutterState extends State<Gutter> {
                         updated[index] = LineState(
                           lineNumber: updated[index].lineNumber,
                           hasBreakpoint: !updated[index].hasBreakpoint,
-                          isFolded: updated[index].isFolded,
                         );
                         _lineStates.value = updated;
                       },
@@ -108,6 +116,12 @@ class _GutterState extends State<Gutter> {
                       ),
                     ) : SizedBox.shrink(),
                     line.lineNumber,
+                    rightItem: line.foldRange != null ? GestureDetector(
+                      onTap: () {
+                        setState(() => line.foldRange!.isFolded = !line.foldRange!.isFolded);
+                      },
+                      child: Icon(!line.foldRange!.isFolded ? Icons.keyboard_arrow_down_outlined : Icons.chevron_right_outlined),
+                    ) : SizedBox.shrink()
                   );
                 }).toList(),
               );
@@ -159,15 +173,15 @@ class GutterItem extends StatelessWidget {
                 height: 1.5,
               );
             } else if(Shared().textStyle != null) {
-                return Shared().textStyle!.copyWith(
-                  color: Shared().textStyle?.color ?? Shared().theme['root']?.color,
-                  height: 1.5,
-                );
+              return Shared().textStyle!.copyWith(
+                color: Shared().textStyle?.color ?? Shared().theme['root']?.color,
+                height: 1.5,
+              );
             } else {
-                return TextStyle(
-                  color: Shared().theme.isNotEmpty ? Shared().theme['root']?.color : Colors.white,
-                  height: 1.5,
-                );
+              return TextStyle(
+                color: Shared().theme.isNotEmpty ? Shared().theme['root']?.color : Colors.white,
+                height: 1.5,
+              );
             }
           })(),
         ),
@@ -179,41 +193,49 @@ class GutterItem extends StatelessWidget {
 
 class LineState {
   final int lineNumber;
-  bool hasBreakpoint;
-  bool isFolded;
+  final bool hasBreakpoint;
+
+  FoldRange? foldRange;
 
   LineState({
     required this.lineNumber,
     this.hasBreakpoint = false,
-    this.isFolded = false,
   });
 }
 
-class GutterStyle{
-  final TextStyle? lineNumberStyle;
-  final Color breakpointColor, unfilledBreakpointColor;
-  final Color? dividerColor;
-  final double? breakpointSize, gutterWidth;
-  final double gutterRightMargin, gutterLeftMargin;
-  final IconData breakpointIcon, unfilledBreakpointIcon;
-  final LineNumberAlignment lineNumberAlignment;
-  GutterStyle({
-    this.lineNumberStyle,
-    this.dividerColor,
-    this.gutterWidth,
-    this.gutterRightMargin = 10,
-    this.gutterLeftMargin = 10,
-    this.lineNumberAlignment = LineNumberAlignment.center,
-    this.breakpointIcon = Icons.circle,
-    this.unfilledBreakpointIcon = Icons.circle_outlined,
-    this.breakpointSize,
-    this.breakpointColor = Colors.red,
-    this.unfilledBreakpointColor = Colors.transparent
-  });
+class FoldRange {
+  final int startLine, endLine;
+  bool isFolded;
+
+  FoldRange(
+    this.startLine,
+    this.endLine,{this.isFolded = false});
 }
 
-enum LineNumberAlignment {
-  center,
-  left,
-  right,
+void getFoldRanges(String code, ValueNotifier<List<LineState>> lineStates) {
+  final List<String> lines = code.split('\n');
+  final lineStateCopy = List<LineState>.from(lineStates.value);
+  Map<String, List<int>> stacks = {"{": [], "[" : [], "(" : [], "<":  []};
+  const matchingBrackets = {"{": "}", "[": "]", "(": ")", "<": ">"};
+  for(final openBracket in matchingBrackets.keys){
+    final closeBracket = matchingBrackets[openBracket]!;
+    for(int i = 0; i < lines.length; i++){
+      if(lines[i].contains(openBracket)){
+        stacks[openBracket]!.add(i);
+      }
+      if(lines[i].contains(closeBracket)){
+        if(stacks[openBracket]!.isNotEmpty){
+          int start = stacks[openBracket]!.removeLast();
+          if(i > start + 1 && i + 1 <= lineStateCopy.length){ {
+            lineStateCopy[start] = LineState(
+              lineNumber: lineStateCopy[start].lineNumber,
+              hasBreakpoint: lineStateCopy[start].hasBreakpoint
+            )..foldRange = FoldRange(start + 1, i + 1);
+          }
+        }
+      }
+     }
+    }
+  }
+  lineStates.value = lineStateCopy;
 }
