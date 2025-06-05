@@ -15,15 +15,14 @@ class CodeCrafterController extends TextEditingController{
   Map<String, TextStyle> get editorTheme => Shared().theme;
   TextStyle? get textStyle => Shared().textStyle;
 
-
+  
   @override
   TextSpan buildTextSpan({
     required BuildContext context,
     TextStyle? style,
     bool? withComposing,
   }){ 
-      // ignore: no_leading_underscores_for_local_identifiers
-      TextStyle _textStyle =  TextStyle(
+      TextStyle baseStyle =  TextStyle(
         color: editorTheme['root']?.color,
         height: 1.5,
       );
@@ -31,10 +30,10 @@ class CodeCrafterController extends TextEditingController{
       final List<Node>? nodes = highlight.parse(text, language: language ?? "").nodes;
       if(nodes != null && editorTheme.isNotEmpty){
         if(textStyle != null){
-          _textStyle = _textStyle.merge(textStyle);
+          baseStyle = baseStyle.merge(textStyle);
         }
         return TextSpan(
-          style: _textStyle,
+          style: baseStyle,
           children: _convert(nodes)
         );
       }
@@ -42,7 +41,6 @@ class CodeCrafterController extends TextEditingController{
         return TextSpan(text: text, style: textStyle);
       }
     }
-  
 
   List<TextSpan> _convert(List<Node> nodes) {
     List<TextSpan> spans = [];
@@ -74,5 +72,9 @@ class CodeCrafterController extends TextEditingController{
     }
 
     return spans;
+  }
+
+  void refresh(){
+    notifyListeners();
   }
 }

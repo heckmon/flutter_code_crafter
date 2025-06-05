@@ -3,28 +3,24 @@ import 'package:flutter/material.dart';
 class GutterStyle{
   final TextStyle? lineNumberStyle;
   final Color breakpointColor, unfilledBreakpointColor;
+  final Color foldedIconColor, unfoldedIconColor;
   final Color? dividerColor;
-  final double? breakpointSize, gutterWidth;
-  final double gutterRightMargin, gutterLeftMargin;
+  final double? breakpointSize, gutterWidth, foldingIconSize;
   final IconData breakpointIcon, unfilledBreakpointIcon;
-  final LineNumberAlignment lineNumberAlignment;
+  final IconData unfoldedIcon, foldedIcon;
   GutterStyle({
     this.lineNumberStyle,
     this.dividerColor,
     this.gutterWidth,
-    this.gutterRightMargin = 10,
-    this.gutterLeftMargin = 10,
-    this.lineNumberAlignment = LineNumberAlignment.center,
     this.breakpointIcon = Icons.circle,
     this.unfilledBreakpointIcon = Icons.circle_outlined,
+    this.foldedIcon = Icons.chevron_right_outlined,
+    this.unfoldedIcon = Icons.keyboard_arrow_down_outlined,
     this.breakpointSize,
+    this.foldingIconSize,
     this.breakpointColor = Colors.red,
-    this.unfilledBreakpointColor = Colors.transparent
+    this.unfilledBreakpointColor = Colors.transparent,
+    this.foldedIconColor = Colors.grey,
+    this.unfoldedIconColor = Colors.grey,
   });
-}
-
-enum LineNumberAlignment {
-  center,
-  left,
-  right,
 }

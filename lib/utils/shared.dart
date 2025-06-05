@@ -1,4 +1,5 @@
 import 'package:flutter_code_crafter/code_crafter/code_crafter_controller.dart';
+import 'package:flutter_code_crafter/gutter/gutter.dart';
 import 'package:flutter/material.dart';
 
 class Shared {
@@ -10,4 +11,5 @@ class Shared {
   TextStyle? textStyle;
   CodeCrafterController controller = CodeCrafterController();
   BoxConstraints constraints = BoxConstraints();
+  ValueNotifier<List<LineState>> lineStates = ValueNotifier([]);
 }

@@ -89,7 +89,8 @@ class _CodeCrafterState extends State<CodeCrafter> {
                   children: [
                     Gutter(
                       widget.gutterStyle ?? GutterStyle(
-                        unfilledBreakpointColor: widget.editorTheme?['root']?.color ?? Colors.grey
+                        foldedIconColor: widget.editorTheme?['root']?.color ?? Colors.grey,
+                        unfoldedIconColor: widget.editorTheme?['root']?.color ?? Colors.grey,
                       ),
                       widget.enableBreakPoints,),
                     Expanded(
@@ -114,6 +115,9 @@ class _CodeCrafterState extends State<CodeCrafter> {
                             )
                           ),
                           child: TextField(
+                            onChanged: (value) {
+                              widget.controller.refresh();
+                            },
                             focusNode: _codeFocus,
                             scrollPhysics: NeverScrollableScrollPhysics(),
                             keyboardType: TextInputType.multiline,
@@ -125,7 +129,7 @@ class _CodeCrafterState extends State<CodeCrafter> {
                             showCursor: true,
                             style: widget.textStyle ?? TextStyle(
                               height: 1.5,
-                              fontSize: 14
+                              fontSize: 14,
                             ),
                             cursorHeight: widget.textStyle?.fontSize ?? 14,
                             controller: widget.controller,

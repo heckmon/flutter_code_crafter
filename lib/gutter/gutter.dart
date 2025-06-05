@@ -51,9 +51,10 @@ class _GutterState extends State<Gutter> {
         setState(() {
           lineNumber = _textPainter.computeLineMetrics().length;
           _lineStates.value =  updatedStates;
-          getFoldRanges(_controller.text, _lineStates);
+          Shared().lineStates = _lineStates;
         });
       }
+      _getFoldRanges(_controller.text, _lineStates);
       int digitCount = max(3, lineNumber.toString().length);
       TextPainter gutterPainter = TextPainter(
         textDirection: TextDirection.ltr,
@@ -62,8 +63,7 @@ class _GutterState extends State<Gutter> {
           style: Shared().textStyle?.copyWith(height: 1.5) ?? TextStyle(height: 1.5)
         )
       )..layout();
-
-      _gutterWidth = widget.gutterStyle.gutterWidth ?? gutterPainter.width * 2;
+      _gutterWidth = widget.gutterStyle.gutterWidth ?? gutterPainter.width * 2.1;
     });
     super.initState();
   }
@@ -72,62 +72,71 @@ class _GutterState extends State<Gutter> {
   Widget build(BuildContext context) {
     return SizedBox(
       width: _gutterWidth,
-      child: Center(
-        child: Padding(
-          padding: EdgeInsets.only(left: widget.gutterStyle.gutterLeftMargin, right: widget.gutterStyle.gutterRightMargin),
-          child: ValueListenableBuilder<List<LineState>>(
-            valueListenable: _lineStates,
-            builder: (context, lines, _) {
-              return Column(
-                children: lines.map((line){
-                  return GutterItem(
-                    lineNumberAlignment: widget.gutterStyle.lineNumberAlignment,
-                    lineNumberStyle: widget.gutterStyle.lineNumberStyle,
-                    leftItem: widget.enableBreakPoints ? GestureDetector(
-                      onTap: () {
-                        final index = line.lineNumber - 1;
-                        final updated = List<LineState>.from(_lineStates.value);
-                        updated[index] = LineState(
-                          lineNumber: updated[index].lineNumber,
-                          hasBreakpoint: !updated[index].hasBreakpoint,
-                        );
-                        _lineStates.value = updated;
-                      },
-                      child: Icon(
-                        line.hasBreakpoint? 
-                          widget.gutterStyle.breakpointIcon : widget.gutterStyle.unfilledBreakpointIcon,
-                        size: ((){
-                          if(widget.gutterStyle.breakpointSize != null){
-                            return widget.gutterStyle.breakpointSize;
-                          }
-                          else if(widget.gutterStyle.lineNumberStyle?.fontSize != null){
-                            double? breakpointSize = widget.gutterStyle.lineNumberStyle!.fontSize;
-                            if(breakpointSize != null) {
-                              return breakpointSize * 0.4;
-                            }
-                          }else if(Shared().textStyle?.fontSize != null){
-                            return Shared().textStyle!.fontSize !* 0.6;
-                          }else{
-                            return 14 * 0.6;
-                          }
-                        })(),
-                        color: line.hasBreakpoint ? 
-                          widget.gutterStyle.breakpointColor : widget.gutterStyle.unfilledBreakpointColor,
-                      ),
-                    ) : SizedBox.shrink(),
-                    line.lineNumber,
-                    rightItem: line.foldRange != null ? GestureDetector(
-                      onTap: () {
-                        setState(() => line.foldRange!.isFolded = !line.foldRange!.isFolded);
-                      },
-                      child: Icon(!line.foldRange!.isFolded ? Icons.keyboard_arrow_down_outlined : Icons.chevron_right_outlined),
-                    ) : SizedBox.shrink()
+      child: ValueListenableBuilder<List<LineState>>(
+        valueListenable: _lineStates,
+        builder: (context, lines, _) {
+          return Column(
+            children: lines.map((line){
+              return GutterItem(
+                lineNumberStyle: widget.gutterStyle.lineNumberStyle,
+                onTap: () {
+                  final index = line.lineNumber - 1;
+                  final updated = List<LineState>.from(_lineStates.value);
+                  updated[index] = LineState(
+                    lineNumber: updated[index].lineNumber,
+                    hasBreakpoint: !updated[index].hasBreakpoint,
                   );
-                }).toList(),
+                  _lineStates.value = updated;
+                },
+                leftItem: widget.enableBreakPoints ? GestureDetector(
+                  onTap: () {
+                    final index = line.lineNumber - 1;
+                    final updated = List<LineState>.from(_lineStates.value);
+                    updated[index] = LineState(
+                      lineNumber: updated[index].lineNumber,
+                      hasBreakpoint: !updated[index].hasBreakpoint,
+                    );
+                    _lineStates.value = updated;
+                  },
+                  child: Icon(
+                    line.hasBreakpoint? 
+                      widget.gutterStyle.breakpointIcon : widget.gutterStyle.unfilledBreakpointIcon,
+                    size: ((){
+                      if(widget.gutterStyle.breakpointSize != null){
+                        return widget.gutterStyle.breakpointSize;
+                      }
+                      else if(widget.gutterStyle.lineNumberStyle?.fontSize != null){
+                        double? breakpointSize = widget.gutterStyle.lineNumberStyle!.fontSize;
+                        if(breakpointSize != null) {
+                          return breakpointSize * 0.4;
+                        }
+                      }else if(Shared().textStyle?.fontSize != null){
+                        return Shared().textStyle!.fontSize !* 0.6;
+                      }else{
+                        return 14 * 0.6;
+                      }
+                    })(),
+                    color: line.hasBreakpoint ? 
+                      widget.gutterStyle.breakpointColor : widget.gutterStyle.unfilledBreakpointColor,
+                  ),
+                ) : SizedBox.shrink(),
+                line.lineNumber,
+                rightItem: line.foldRange != null ? GestureDetector(
+                  onTap: () {
+                    setState(() => line.foldRange!.isFolded = !line.foldRange!.isFolded);
+                  },
+                  child: Icon(
+                    !line.foldRange!.isFolded ? widget.gutterStyle.unfoldedIcon : widget.gutterStyle.foldedIcon,
+                    color: !line.foldRange!.isFolded ? 
+                      widget.gutterStyle.unfoldedIconColor : widget.gutterStyle.foldedIconColor,
+                    size: widget.gutterStyle.foldingIconSize ?? 
+                      (widget.gutterStyle.lineNumberStyle?.fontSize ?? Shared().textStyle?.fontSize ?? 14) * 0.9,
+                  ),
+                ) : SizedBox.shrink()
               );
-            }
-          ),
-        ),
+            }).toList(),
+          );
+        }
       ),
     );
   }
@@ -138,54 +147,47 @@ class GutterItem extends StatelessWidget {
   final Widget rightItem;
   final int linNumber;
   final TextStyle? lineNumberStyle;
-  final LineNumberAlignment lineNumberAlignment;
+  final VoidCallback? onTap;
   const GutterItem(
     this.linNumber,{
       super.key, 
-      required this.lineNumberAlignment,
       this.lineNumberStyle,
-      this.leftItem = const SizedBox(),
-      this.rightItem = const SizedBox()
+      this.leftItem = const SizedBox.expand(),
+      this.rightItem = const SizedBox.expand(),
+      this.onTap
     }
   );
 
   @override
   Widget build(BuildContext context) {
     return Row(
-      mainAxisAlignment: ((){
-        switch(lineNumberAlignment) {
-          case LineNumberAlignment.center:
-            return MainAxisAlignment.spaceEvenly;
-          case LineNumberAlignment.left:
-            return MainAxisAlignment.start;
-          case LineNumberAlignment.right:
-            return MainAxisAlignment.end;
-        }
-      })(),
       children: [
-        leftItem,
-        Text(
-          linNumber.toString(), 
-          style: ((){
-            if(lineNumberStyle != null) {
-              return lineNumberStyle!.copyWith(
-                color: lineNumberStyle?.color ?? Shared().theme['root']?.color,
-                height: 1.5,
-              );
-            } else if(Shared().textStyle != null) {
-              return Shared().textStyle!.copyWith(
-                color: Shared().textStyle?.color ?? Shared().theme['root']?.color,
-                height: 1.5,
-              );
-            } else {
-              return TextStyle(
-                color: Shared().theme.isNotEmpty ? Shared().theme['root']?.color : Colors.white,
-                height: 1.5,
-              );
-            }
-          })(),
+        Expanded(child: leftItem),
+        GestureDetector(
+          onTap: onTap,
+          child: Text(
+            linNumber.toString(), 
+            style: ((){
+              if(lineNumberStyle != null) {
+                return lineNumberStyle!.copyWith(
+                  color: lineNumberStyle?.color ?? Shared().theme['root']?.color,
+                  height: 1.5,
+                );
+              } else if(Shared().textStyle != null) {
+                return Shared().textStyle!.copyWith(
+                  color: Shared().textStyle?.color ?? Shared().theme['root']?.color,
+                  height: 1.5,
+                );
+              } else {
+                return TextStyle(
+                  color: Shared().theme.isNotEmpty ? Shared().theme['root']?.color : Colors.white,
+                  height: 1.5,
+                );
+              }
+            })(),
+          ),
         ),
-        rightItem,
+        Expanded(child: rightItem),
       ],
     );
   }
@@ -194,13 +196,16 @@ class GutterItem extends StatelessWidget {
 class LineState {
   final int lineNumber;
   final bool hasBreakpoint;
+  String code = "";
 
   FoldRange? foldRange;
 
   LineState({
     required this.lineNumber,
     this.hasBreakpoint = false,
-  });
+  }) {
+    code = Shared().controller.text.split('\n')[lineNumber - 1];
+  }
 }
 
 class FoldRange {
@@ -212,9 +217,12 @@ class FoldRange {
     this.endLine,{this.isFolded = false});
 }
 
-void getFoldRanges(String code, ValueNotifier<List<LineState>> lineStates) {
+void _getFoldRanges(String code, ValueNotifier<List<LineState>> lineStates) {
   final List<String> lines = code.split('\n');
-  final lineStateCopy = List<LineState>.from(lineStates.value);
+  final lineStateCopy = lineStates.value.map((e) => LineState(
+    lineNumber: e.lineNumber,
+    hasBreakpoint: e.hasBreakpoint,
+  )).toList();
   Map<String, List<int>> stacks = {"{": [], "[" : [], "(" : [], "<":  []};
   const matchingBrackets = {"{": "}", "[": "]", "(": ")", "<": ">"};
   for(final openBracket in matchingBrackets.keys){
@@ -227,10 +235,11 @@ void getFoldRanges(String code, ValueNotifier<List<LineState>> lineStates) {
         if(stacks[openBracket]!.isNotEmpty){
           int start = stacks[openBracket]!.removeLast();
           if(i > start + 1 && i + 1 <= lineStateCopy.length){ {
+            bool previouslyFolded = lineStates.value[start].foldRange?.isFolded ?? false;
             lineStateCopy[start] = LineState(
               lineNumber: lineStateCopy[start].lineNumber,
-              hasBreakpoint: lineStateCopy[start].hasBreakpoint
-            )..foldRange = FoldRange(start + 1, i + 1);
+              hasBreakpoint: lineStateCopy[start].hasBreakpoint,
+            )..foldRange = FoldRange(start + 1, i + 1, isFolded: previouslyFolded);
           }
         }
       }
