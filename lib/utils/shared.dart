@@ -1,5 +1,5 @@
-import 'package:flutter_code_crafter/code_crafter/code_crafter_controller.dart';
-import 'package:flutter_code_crafter/gutter/gutter.dart';
+import '../code_crafter/code_crafter_controller.dart';
+import './utils.dart';
 import 'package:flutter/material.dart';
 
 class Shared {

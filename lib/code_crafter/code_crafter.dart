@@ -1,7 +1,7 @@
-import 'package:flutter_code_crafter/code_crafter/code_crafter_controller.dart';
-import 'package:flutter_code_crafter/utils/shared.dart';
-import 'package:flutter_code_crafter/gutter/gutter.dart';
-import 'package:flutter_code_crafter/gutter/gutter_style.dart';
+import './code_crafter_controller.dart';
+import '../utils/shared.dart';
+import '../gutter/gutter.dart';
+import '../gutter/gutter_style.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
