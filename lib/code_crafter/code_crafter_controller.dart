@@ -1,3 +1,4 @@
+import '../utils/utils.dart';
 import '../utils/shared.dart';
 import 'package:flutter/material.dart';
 import 'package:highlight/highlight.dart';
@@ -6,7 +7,7 @@ class CodeCrafterController extends TextEditingController{
 
   String? _language;
   String? get language => _language;
-
+  
   set language(String? language){
     _language = language;
     notifyListeners();
@@ -22,29 +23,38 @@ class CodeCrafterController extends TextEditingController{
     TextStyle? style,
     bool? withComposing,
   }){ 
+      final lines = text.isNotEmpty ? text.split("\n") : [];
+      final foldedRanges = Shared().lineStates.value
+        .where((line) => line.foldRange?.isFolded == true)
+        .map((line) => line.foldRange!)
+        .toList();
+
+      foldedRanges.sort((a, b) => a.startLine.compareTo(b.startLine));
+      final filteredFolds = <FoldRange>[];
+      for (final fold in foldedRanges) {
+        bool isNested = filteredFolds.any((parent) =>
+          fold.startLine >= parent.startLine && fold.endLine <= parent.endLine);
+        if (!isNested) filteredFolds.add(fold);
+      }
+      filteredFolds.sort((a, b) => b.startLine.compareTo(a.startLine));
+
+      for (final fold in filteredFolds) {
+        int start = fold.startLine - 1;
+        int end = fold.endLine;
+        if (start >= 0 && end <= lines.length && start < end) {
+          lines[start] = "${lines[start]}...${((){
+            return '\u200D' * ((lines.sublist(start+1, end).join('\n').length) - 2);
+          })()}";
+          lines.removeRange(start + 1, end);
+        }
+      }
+      final newText = lines.join('\n');
+
       TextStyle baseStyle =  TextStyle(
         color: editorTheme['root']?.color,
         height: 1.5,
       );
 
-      final lines = text.isNotEmpty ? text.split("\n") : [];
-      final visibleLines = Shared().lineStates.value;
-      final foldedRanges = visibleLines
-        .where((line) => line.foldRange?.isFolded == true)
-        .map((line) => line.foldRange!)
-        .toList();
-
-      foldedRanges.sort((a, b) => b.startLine.compareTo(a.startLine));
-
-      for (final fold in foldedRanges) {
-        int start = fold.startLine - 1;
-        int end = fold.endLine;
-        if (start >= 0 && end <= lines.length && start < end) {
-          lines[start] = "${lines[start]}...";
-          lines.removeRange(start + 1, end);
-        }
-      }
-      final newText = lines.join('\n');
       final List<Node>? nodes = highlight.parse(newText, language: language ?? "").nodes;
       if(nodes != null && editorTheme.isNotEmpty){
         if(textStyle != null){

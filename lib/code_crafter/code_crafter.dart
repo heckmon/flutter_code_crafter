@@ -13,6 +13,7 @@ class CodeCrafter extends StatefulWidget {
   final int tabSize;
   final GutterStyle? gutterStyle;
   final bool enableBreakPoints;
+  final bool enableFolding;
   const CodeCrafter({
     super.key,
     required this.controller,
@@ -23,6 +24,7 @@ class CodeCrafter extends StatefulWidget {
     this.selectionColor,
     this.cursorColor,
     this.enableBreakPoints = true,
+    this.enableFolding = true,
     this.tabSize = 4,
   });
 
@@ -92,7 +94,9 @@ class _CodeCrafterState extends State<CodeCrafter> {
                         foldedIconColor: widget.editorTheme?['root']?.color ?? Colors.grey,
                         unfoldedIconColor: widget.editorTheme?['root']?.color ?? Colors.grey,
                       ),
-                      widget.enableBreakPoints,),
+                      widget.enableBreakPoints,
+                      widget.enableFolding
+                    ),
                     Expanded(
                       child: KeyboardListener(
                         focusNode: _keyboardFocus,

@@ -7,9 +7,9 @@ import 'package:flutter/material.dart';
 
 
 class Gutter extends StatefulWidget {
-  final bool enableBreakPoints;
+  final bool enableBreakPoints, enableFolding;
   final GutterStyle gutterStyle;
-  const Gutter(this.gutterStyle,this.enableBreakPoints, {super.key});
+  const Gutter(this.gutterStyle,this.enableBreakPoints, this.enableFolding, {super.key});
 
   @override
   State<Gutter> createState() => _GutterState();
