@@ -43,6 +43,7 @@ class _CodeCrafterState extends State<CodeCrafter> {
     Shared().theme = widget.editorTheme ?? {};
     Shared().textStyle = widget.textStyle;
     Shared().controller = widget.controller;
+    Shared().tabSize = widget.tabSize;
     widget.controller.addListener(() {
       text = widget.controller.text;
     });
@@ -119,9 +120,6 @@ class _CodeCrafterState extends State<CodeCrafter> {
                             )
                           ),
                           child: TextField(
-                            onChanged: (value) {
-                              widget.controller.refresh();
-                            },
                             focusNode: _codeFocus,
                             scrollPhysics: NeverScrollableScrollPhysics(),
                             keyboardType: TextInputType.multiline,

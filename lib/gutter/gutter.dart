@@ -222,13 +222,11 @@ void _getFoldRanges(String code, ValueNotifier<List<LineState>> lineStates) {
   for(final openBracket in matchingBrackets.keys){
     final closeBracket = matchingBrackets[openBracket]!;
     for(int i = 0; i < lines.length; i++){
-      if(lines[i].contains(openBracket)){
-        stacks[openBracket]!.add(i);
-      }
+      if(lines[i].contains(openBracket)) stacks[openBracket]!.add(i);
       if(lines[i].contains(closeBracket)){
         if(stacks[openBracket]!.isNotEmpty){
           int start = stacks[openBracket]!.removeLast();
-          if(i > start + 1 && i + 1 <= lineStateCopy.length){ {
+          if(i > start + 1 && i + 1 <= lineStateCopy.length){
             bool previouslyFolded = lineStates.value[start].foldRange?.isFolded ?? false;
             lineStateCopy[start] = LineState(
               lineNumber: lineStateCopy[start].lineNumber,
@@ -237,7 +235,29 @@ void _getFoldRanges(String code, ValueNotifier<List<LineState>> lineStates) {
           }
         }
       }
-     }
+    }
+  }
+  for (int i = 0; i < lines.length; i++) {
+    final line = lines[i];
+    if (line.trim().isEmpty || !line.trim().endsWith(':')) continue;
+    final startIndent = line.length - line.trimLeft().length;
+    int j = i + 1;
+    while (j < lines.length) {
+      final next = lines[j];
+      if (next.trim().isEmpty) {
+        j++;
+        continue;
+      }
+      final nextIndent = next.length - next.trimLeft().length;
+      if (nextIndent <= startIndent) break;
+      j++;
+    }
+    if (j > i + 1 && j <= lines.length) {
+      bool previouslyFolded = lineStates.value[i].foldRange?.isFolded ?? false;
+      lineStateCopy[i] = LineState(
+        lineNumber: lineStateCopy[i].lineNumber,
+        hasBreakpoint: lineStateCopy[i].hasBreakpoint,
+      )..foldRange = FoldRange(i + 1, j, isFolded: previouslyFolded);
     }
   }
   lineStates.value = lineStateCopy;

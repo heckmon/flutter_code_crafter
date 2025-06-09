@@ -5,25 +5,76 @@ import 'package:highlight/highlight.dart';
 
 class CodeCrafterController extends TextEditingController{
 
-  String? _language;
-  String? get language => _language;
+  Mode? _language;
+  Mode? get language => _language;
+
+  String? _langId;
   
-  set language(String? language){
+  set language(Mode? language){
+    if(language == _language) return; 
+    if(language != null){
+      _langId = language.hashCode.toString();
+      highlight.registerLanguage(_langId!, language);
+    }
     _language = language;
     notifyListeners();
   }
   
   Map<String, TextStyle> get editorTheme => Shared().theme;
-
   TextStyle? get textStyle => Shared().textStyle;
   
+  @override
+  set value(TextEditingValue newValue) {
+    final oldValue = super.value;
+    if (newValue.text.length > oldValue.text.length &&
+        newValue.text.substring(0, newValue.selection.baseOffset).endsWith('\n')) {
+      final cursorPosition = newValue.selection.baseOffset;
+      final textBeforeCursor = newValue.text.substring(0, cursorPosition);
+      final textAfterCursor = newValue.text.substring(cursorPosition);
+
+      final lines = textBeforeCursor.split('\n');
+      if (lines.length < 2) {
+        super.value = newValue;
+        return;
+      }
+      final prevLine = lines[lines.length - 2];
+      final indentMatch = RegExp(r'^\s*').firstMatch(prevLine);
+      final prevIndent = indentMatch?.group(0) ?? '';
+      final shouldIndent = RegExp(r'[:{[(]\s*$').hasMatch(prevLine);
+      final extraIndent = shouldIndent ? ' ' * Shared().tabSize : '';
+      final indent = prevIndent + extraIndent;
+      final openToClose = {'{': '}', '(': ')', '[': ']'};
+      final lastChar = prevLine.trimRight().isNotEmpty ? prevLine.trimRight().characters.last : null;
+      final nextChar = textAfterCursor.trimLeft().isNotEmpty ? textAfterCursor.trimLeft().characters.first : null;
+      final isBracketOpen = openToClose.containsKey(lastChar);
+      final isNextClosing = isBracketOpen && openToClose[lastChar] == nextChar;
+      String newText;
+      int newOffset;
+      if (isBracketOpen && isNextClosing) {
+        newText = '$textBeforeCursor$indent\n$prevIndent$textAfterCursor';
+        newOffset = cursorPosition + indent.length;
+      } else {
+        newText = '$textBeforeCursor$indent$textAfterCursor';
+        newOffset = cursorPosition + indent.length;
+      }
+
+      super.value = TextEditingValue(
+        text: newText,
+        selection: TextSelection.collapsed(offset: newOffset),
+      );
+      return;
+    }
+
+    super.value = newValue;
+  }
+
   @override
   TextSpan buildTextSpan({
     required BuildContext context,
     TextStyle? style,
     bool? withComposing,
   }){ 
-      final lines = text.isNotEmpty ? text.split("\n") : [];
+      final List<String> lines = text.isNotEmpty ? text.split("\n") : [];
       final foldedRanges = Shared().lineStates.value
         .where((line) => line.foldRange?.isFolded == true)
         .map((line) => line.foldRange!)
@@ -55,7 +106,7 @@ class CodeCrafterController extends TextEditingController{
         height: 1.5,
       );
 
-      final List<Node>? nodes = highlight.parse(newText, language: language ?? "").nodes;
+      final List<Node>? nodes = highlight.parse(newText, language: _langId).nodes;
       if(nodes != null && editorTheme.isNotEmpty){
         if(textStyle != null){
           baseStyle = baseStyle.merge(textStyle);
@@ -75,7 +126,7 @@ class CodeCrafterController extends TextEditingController{
     var currentSpans = spans;
     List<List<TextSpan>> stack = [];
 
-    traverse(Node node) {
+    void traverse(Node node) {
       if (node.value != null && editorTheme.isNotEmpty) {
         currentSpans.add(node.className == null
           ? TextSpan(text: node.value)
@@ -105,5 +156,4 @@ class CodeCrafterController extends TextEditingController{
   void refresh(){
     notifyListeners();
   }
-  
 }

@@ -9,6 +9,7 @@ class Shared {
   String fullText = '', visibleText = '';
   Map<String, TextStyle> theme = {};
   TextStyle? textStyle;
+  int tabSize = 0;
   CodeCrafterController controller = CodeCrafterController();
   BoxConstraints constraints = BoxConstraints();
   ValueNotifier<List<LineState>> lineStates = ValueNotifier([]);
