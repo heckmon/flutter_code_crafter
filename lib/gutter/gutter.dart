@@ -72,7 +72,7 @@ class _GutterState extends State<Gutter> {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: _gutterWidth,
+      width: _gutterWidth ?? 65,
       child: ValueListenableBuilder<List<LineState>>(
         valueListenable: _lineStates,
         builder: (context, lines, _) {
@@ -88,7 +88,6 @@ class _GutterState extends State<Gutter> {
           List<Widget> gutters = [];
           for (int i = 0; i < lines.length; i++) {
             if (!visibleLines[i]) continue;
-            
             final line = lines[i];
             gutters.add(GutterItem(
               lineNumberStyle: widget.gutterStyle.lineNumberStyle,
@@ -146,13 +145,13 @@ class _GutterState extends State<Gutter> {
                   color: !line.foldRange!.isFolded ? 
                     widget.gutterStyle.unfoldedIconColor : widget.gutterStyle.foldedIconColor,
                   size: widget.gutterStyle.foldingIconSize ?? 
-                    (widget.gutterStyle.lineNumberStyle?.fontSize ?? Shared().textStyle?.fontSize ?? 14) * 0.9,
+                    (widget.gutterStyle.lineNumberStyle?.fontSize ?? Shared().textStyle?.fontSize ?? 14) * 1.2,
                 ),
               ) : SizedBox.shrink()
             ));
           }
           return Column(
-            children: gutters
+            children: _lineStates.value.isEmpty ? [GutterItem(1)] : gutters
           );
         }
       ),
@@ -170,8 +169,8 @@ class GutterItem extends StatelessWidget {
     this.linNumber,{
       super.key, 
       this.lineNumberStyle,
-      this.leftItem = const SizedBox.expand(),
-      this.rightItem = const SizedBox.expand(),
+      this.leftItem = const SizedBox(),
+      this.rightItem = const SizedBox(),
       this.onTap
     }
   );

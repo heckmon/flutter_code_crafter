@@ -25,7 +25,7 @@ class CodeCrafter extends StatefulWidget {
     this.cursorColor,
     this.enableBreakPoints = true,
     this.enableFolding = true,
-    this.tabSize = 4,
+    this.tabSize = 3,
   });
 
   @override
@@ -106,9 +106,12 @@ class _CodeCrafterState extends State<CodeCrafter> {
                             if(value.logicalKey == LogicalKeyboardKey.tab){
                               int cursorPosition = widget.controller.selection.baseOffset;
                               String currText = widget.controller.text;
-                              widget.controller.text = "${currText.substring(0, cursorPosition)}${" " * widget.tabSize}${currText.substring(cursorPosition)}";
                               _keyboardFocus.previousFocus();
-                              widget.controller.selection = TextSelection.fromPosition(TextPosition(offset: cursorPosition + widget.tabSize));
+                              widget.controller.value = TextEditingValue(
+                                text: currText.replaceRange(cursorPosition, cursorPosition, ' ' * widget.tabSize),
+                                selection: TextSelection.collapsed(offset: cursorPosition + widget.tabSize)
+                              );
+                              return;
                             }
                           }
                         } ,
