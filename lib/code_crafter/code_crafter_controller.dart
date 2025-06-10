@@ -26,8 +26,7 @@ class CodeCrafterController extends TextEditingController{
   @override
   set value(TextEditingValue newValue) {
     final oldValue = super.value;
-    if (newValue.text.length > oldValue.text.length &&
-        newValue.text.substring(0, newValue.selection.baseOffset).endsWith('\n')) {
+    if (newValue.text.length > oldValue.text.length && newValue.text.substring(0, newValue.selection.baseOffset).endsWith('\n')) {
       final cursorPosition = newValue.selection.baseOffset;
       final textBeforeCursor = newValue.text.substring(0, cursorPosition);
       final textAfterCursor = newValue.text.substring(cursorPosition);

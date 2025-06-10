@@ -6,7 +6,9 @@ class Shared {
   static final Shared _instance = Shared._internal();
   factory Shared() => _instance;
   Shared._internal();
+
   String fullText = '', visibleText = '';
+  double gutterWidth = 65;
   Map<String, TextStyle> theme = {};
   TextStyle? textStyle;
   int tabSize = 0;

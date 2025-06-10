@@ -25,10 +25,8 @@ class FoldRange {
 
 class EditorField {
   // Callbacks
-  final void Function(String)? onChanged;
-  final void Function()? onTap;
-  final void Function()? onEditingComplete;
-  final void Function(String)? onSubmitted;
+  final void Function(String)? onChanged, onSubmitted;
+  final void Function()? onTap, onEditingComplete;
   final void Function(PointerDownEvent)? onTapOutside;
 
   // Keyboard & input
@@ -36,9 +34,7 @@ class EditorField {
   final TextInputAction? textInputAction;
   final List<TextInputFormatter>? inputFormatters;
   final TextCapitalization? textCapitalization;
-  final bool? obscureText;
-  final bool? enableSuggestions;
-  final bool? autocorrect;
+  final bool? obscureText, enableSuggestions, autocorrect;
 
   // Layout & appearance
   final InputDecoration? decoration;
@@ -47,15 +43,12 @@ class EditorField {
   final TextDirection? textDirection;
   final TextAlignVertical? textAlignVertical;
   final bool? expands;
-  final int? maxLines;
-  final int? minLines;
-  final int? maxLength;
+  final int? maxLines, minLines, maxLength;
   final MaxLengthEnforcement? maxLengthEnforcement;
 
   // Cursor & selection
   final bool? showCursor;
-  final double? cursorWidth;
-  final double? cursorHeight;
+  final double? cursorWidth, cursorHeight;
   final Radius? cursorRadius;
   final Color? cursorColor;
   final bool? enableInteractiveSelection;

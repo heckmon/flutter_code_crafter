@@ -65,6 +65,7 @@ class _GutterState extends State<Gutter> {
         )
       )..layout();
       _gutterWidth = widget.gutterStyle.gutterWidth ?? gutterPainter.width * 2.1;
+      Shared().gutterWidth = _gutterWidth ?? 65;
     });
     super.initState();
   }
@@ -215,7 +216,7 @@ void _getFoldRanges(String code, ValueNotifier<List<LineState>> lineStates) {
   final lineStateCopy = lineStates.value.map((e) => LineState(
     lineNumber: e.lineNumber,
     hasBreakpoint: e.hasBreakpoint,
-  )).toList();
+  )..foldRange = e.foldRange).toList();
   Map<String, List<int>> stacks = {"{": [], "[" : [], "(" : [], "<":  []};
   const matchingBrackets = {"{": "}", "[": "]", "(": ")", "<": ">"};
   for(final openBracket in matchingBrackets.keys){

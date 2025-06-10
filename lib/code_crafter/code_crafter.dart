@@ -1,5 +1,5 @@
-import '../utils/utils.dart';
 import './code_crafter_controller.dart';
+import '../utils/utils.dart';
 import '../utils/shared.dart';
 import '../gutter/gutter.dart';
 import '../gutter/gutter_style.dart';
@@ -14,6 +14,7 @@ class CodeCrafter extends StatefulWidget {
   final int tabSize;
   final GutterStyle? gutterStyle;
   final bool enableBreakPoints, enableFolding, autoFocus, readOnly;
+  final bool wrapLines;
   final FocusNode? focusNode;
   final EditorField? editorField;
   const CodeCrafter({
@@ -28,6 +29,7 @@ class CodeCrafter extends StatefulWidget {
     this.cursorColor,
     this.enableBreakPoints = true,
     this.enableFolding = true,
+    this.wrapLines = false,
     this.autoFocus = false,
     this.readOnly = false,
     this.tabSize = 3,
@@ -128,31 +130,37 @@ class _CodeCrafterState extends State<CodeCrafter> {
                               selectionHandleColor: widget.selectionHandleColor
                             )
                           ),
-                          child: widget.editorField?.build(
-                            controller: widget.controller,
-                            focusNode: _codeFocus,
-                            autofocus: widget.autoFocus,
-                            readOnly: widget.readOnly,
-                            fallbackStyle: widget.textStyle,
-                            fallbackCursorColor: widget.cursorColor,
-                            editorTheme: widget.editorTheme,
-                          ) ?? TextField(
-                            controller: widget.controller,
-                            focusNode: _codeFocus,
-                            autofocus: widget.autoFocus,
-                            readOnly: widget.readOnly,
-                            scrollPhysics: const NeverScrollableScrollPhysics(),
-                            keyboardType: TextInputType.multiline,
-                            decoration: const InputDecoration(
-                              isCollapsed: true,
-                              border: InputBorder.none,
+                          child: SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            child: SizedBox(
+                              width: widget.wrapLines ? constraints.maxWidth - Shared().gutterWidth : double.maxFinite,
+                              child: widget.editorField?.build(
+                                controller: widget.controller,
+                                focusNode: _codeFocus,
+                                autofocus: widget.autoFocus,
+                                readOnly: widget.readOnly,
+                                fallbackStyle: widget.textStyle,
+                                fallbackCursorColor: widget.cursorColor,
+                                editorTheme: widget.editorTheme,
+                              ) ?? TextField(
+                                controller: widget.controller,
+                                focusNode: _codeFocus,
+                                autofocus: widget.autoFocus,
+                                readOnly: widget.readOnly,
+                                scrollPhysics: const NeverScrollableScrollPhysics(),
+                                keyboardType: TextInputType.multiline,
+                                decoration: const InputDecoration(
+                                  isCollapsed: true,
+                                  border: InputBorder.none,
+                                ),
+                                maxLines: null,
+                                showCursor: true,
+                                style: widget.textStyle ?? const TextStyle(height: 1.5, fontSize: 14),
+                                cursorHeight: widget.textStyle?.fontSize ?? 14,
+                                cursorColor: widget.cursorColor ?? widget.editorTheme?['root']?.color ?? Colors.white,
+                                cursorWidth: 2,
+                              ),
                             ),
-                            maxLines: null,
-                            showCursor: true,
-                            style: widget.textStyle ?? const TextStyle(height: 1.5, fontSize: 14),
-                            cursorHeight: widget.textStyle?.fontSize ?? 14,
-                            cursorColor: widget.cursorColor ?? widget.editorTheme?['root']?.color ?? Colors.white,
-                            cursorWidth: 2,
                           )
                         ),
                       ),
