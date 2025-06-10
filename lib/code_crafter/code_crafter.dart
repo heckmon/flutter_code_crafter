@@ -41,8 +41,8 @@ class CodeCrafter extends StatefulWidget {
 }
 
 class _CodeCrafterState extends State<CodeCrafter> {
-  String text = '';
   late final FocusNode _keyboardFocus, _codeFocus;
+  double gutterWidth = Shared().gutterWidth;
 
   @override
   void initState() {
@@ -53,7 +53,9 @@ class _CodeCrafterState extends State<CodeCrafter> {
     Shared().controller = widget.controller;
     Shared().tabSize = widget.tabSize;
     widget.controller.addListener(() {
-      text = widget.controller.text;
+      if(gutterWidth != Shared().gutterWidth) {
+        setState(() => gutterWidth = Shared().gutterWidth);
+      }
     });
     super.initState();
   }
@@ -133,7 +135,7 @@ class _CodeCrafterState extends State<CodeCrafter> {
                           child: SingleChildScrollView(
                             scrollDirection: Axis.horizontal,
                             child: SizedBox(
-                              width: widget.wrapLines ? constraints.maxWidth - Shared().gutterWidth : double.maxFinite,
+                              width: widget.wrapLines ? constraints.maxWidth - gutterWidth : double.maxFinite,
                               child: widget.editorField?.build(
                                 controller: widget.controller,
                                 focusNode: _codeFocus,
