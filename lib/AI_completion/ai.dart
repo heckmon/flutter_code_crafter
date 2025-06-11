@@ -5,13 +5,14 @@ import 'package:http/http.dart' as http;
 
 class AiCompletion{
   Models model;
-  bool cacheResponse;
+  bool cacheResponse, enableCompletion;
   int debounceTime;
   
   AiCompletion({
     required this.model,
     this.cacheResponse = true,
     this.debounceTime = 1000,
+    this.enableCompletion =true
   });
 }
 
@@ -294,7 +295,7 @@ class CustomModel extends Models {
     return headers;
   }
 
-@override
+  @override
   Map<String, dynamic> buildRequest(String code) {
     if (requestBuilder != null) {
       return requestBuilder!(code, instruction);

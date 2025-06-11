@@ -7,7 +7,7 @@ class Shared {
   factory Shared() => _instance;
   Shared._internal();
 
-  String fullText = '', visibleText = '';
+  String? aiResponse;
   double gutterWidth = 65;
   Map<String, TextStyle> theme = {};
   TextStyle? textStyle;

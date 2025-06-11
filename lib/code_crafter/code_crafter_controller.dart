@@ -98,21 +98,49 @@ class CodeCrafterController extends TextEditingController{
           lines.removeRange(start + 1, end);
         }
       }
-      final newText = lines.join('\n');
+
+      String newText = lines.join('\n');
 
       TextStyle baseStyle =  TextStyle(
         color: editorTheme['root']?.color,
         height: 1.5,
       );
 
+      if(textStyle != null){
+        baseStyle = baseStyle.merge(textStyle);
+      }
+      
+      if(Shared().aiResponse != null && newText.isNotEmpty){
+        final int cursorPosition = selection.baseOffset;
+        final String textBeforeCursor = newText.substring(0, cursorPosition);
+        final String textAfterCursor = newText.substring(cursorPosition);
+        final List<Node>? beforeCursorNodes = highlight.parse(textBeforeCursor, language: _langId).nodes;
+        TextSpan aiOverlay = TextSpan(
+          text: Shared().aiResponse,
+          style: TextStyle(color: Colors.grey,fontStyle: FontStyle.italic)
+        );
+        final List<Node>? afterCursorNodes = highlight.parse(textAfterCursor,language: _langId).nodes;
+        
+        if(beforeCursorNodes != null){
+          if(cursorPosition != selection.baseOffset){
+            Shared().aiResponse = null;
+          }
+          return TextSpan(
+            style: baseStyle,
+            children: [
+              ..._convert(beforeCursorNodes),
+              aiOverlay,
+              ..._convert(afterCursorNodes ?? <Node>[])
+            ]
+          );
+        }
+      }
+
       final List<Node>? nodes = highlight.parse(newText, language: _langId).nodes;
       if(nodes != null && editorTheme.isNotEmpty){
-        if(textStyle != null){
-          baseStyle = baseStyle.merge(textStyle);
-        }
         return TextSpan(
           style: baseStyle,
-          children: _convert(nodes)
+          children: [..._convert(nodes)]
         );
       }
       else{

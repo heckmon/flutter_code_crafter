@@ -1,4 +1,6 @@
+import 'dart:async';
 import './code_crafter_controller.dart';
+import '../AI_completion/ai.dart';
 import '../utils/utils.dart';
 import '../utils/shared.dart';
 import '../gutter/gutter.dart';
@@ -17,6 +19,7 @@ class CodeCrafter extends StatefulWidget {
   final bool wrapLines;
   final FocusNode? focusNode;
   final EditorField? editorField;
+  final AiCompletion? aiCompletion;
   const CodeCrafter({
     super.key,
     required this.controller,
@@ -24,6 +27,7 @@ class CodeCrafter extends StatefulWidget {
     this.textStyle,
     this.gutterStyle,
     this.editorTheme,
+    this.aiCompletion,
     this.selectionHandleColor,
     this.selectionColor,
     this.cursorColor,
@@ -43,11 +47,17 @@ class CodeCrafter extends StatefulWidget {
 class _CodeCrafterState extends State<CodeCrafter> {
   late final FocusNode _keyboardFocus, _codeFocus;
   double gutterWidth = Shared().gutterWidth;
+  Map<String, String> cachedResponse = {};
+  Timer? _debounceTimer;
+  String _value = '';
+  int _cursorPostion = 0;
 
   @override
   void initState() {
     _keyboardFocus = FocusNode();
     _codeFocus = widget.focusNode ?? FocusNode();
+    _value = widget.controller.text;
+    _cursorPostion = widget.controller.selection.baseOffset;
     Shared().theme = widget.editorTheme ?? {};
     Shared().textStyle = widget.textStyle;
     Shared().controller = widget.controller;
@@ -56,6 +66,26 @@ class _CodeCrafterState extends State<CodeCrafter> {
       if(gutterWidth != Shared().gutterWidth) {
         setState(() => gutterWidth = Shared().gutterWidth);
       }
+      if(_value == widget.controller.text && _cursorPostion != widget.controller.selection.baseOffset){
+        Shared().aiResponse = null;
+      }
+      if(_value != widget.controller.text && (widget.aiCompletion?.enableCompletion ?? false)){
+        final String text = widget.controller.text;
+        final int cursorPosition = widget.controller.selection.baseOffset;
+        final String codeToSend = "${text.substring(0, cursorPosition)}<|CURSOR|>${text.substring(cursorPosition)}";
+
+        _debounceTimer?.cancel();
+
+        _debounceTimer = Timer(
+          Duration(milliseconds: widget.aiCompletion!.debounceTime),
+          () async {
+            Shared().aiResponse = await _getCachedRsponse(codeToSend);
+            setState(() {});
+          }
+        );
+        _value = widget.controller.text;
+      }
+      print(Shared().aiResponse);
     });
     super.initState();
   }
@@ -77,7 +107,18 @@ class _CodeCrafterState extends State<CodeCrafter> {
   void dispose() {
     widget.controller.dispose();
     _keyboardFocus.dispose();
+    _debounceTimer?.cancel();
     super.dispose();
+  }
+
+  Future<String> _getCachedRsponse(String codeToSend) async{
+    final String key = codeToSend.hashCode.toString();
+    if(cachedResponse.containsKey(key)){
+      return cachedResponse[key]!;
+    }
+    final String aiResponse = await widget.aiCompletion!.model.completionResponse(codeToSend);
+    cachedResponse[key] = aiResponse;
+    return aiResponse;
   }
   
   @override
