@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:meta/meta.dart';
 import 'package:http/http.dart' as http;
 
 class AiCompletion{
@@ -15,30 +16,75 @@ class AiCompletion{
 }
 
 sealed class Models{
-  String get url;
+  @protected String get url;
   String? get apiKey;
   String? get model;
   Map<String, String> get headers;
 
+  @protected
+  final String instruction = "You are a code completion engine. Given the provided code where the cursor is represented by the placeholder '<|CURSOR|>', generate only the code that should be inserted at that position. Do not include the placeholder or any explanations. Return only the code to insert.";
+
   Map<String, dynamic> buildRequest(String code);
+  
+  String responseParser(dynamic response);
 
   Future<String> completionResponse(String code) async{
     final uri = Uri.parse(url);
     final response = await http.post(uri, headers: headers, body: jsonEncode(buildRequest(code)));
     if(response.statusCode == 200){
-      return response.body;
+      return _cleanCode(responseParser(jsonDecode(response.body)));
     }
     throw HttpException("Failed to load AI suggestion \nStatus code: ${response.statusCode}\n error: ${response.body}");
+  }
+
+  @protected
+  String _cleanCode(String raw) {
+    final codeBlockRegex = RegExp(r'```(?:\w+)?\n([\s\S]*?)\n```');
+    final thinkRegex = RegExp(r'<think>[\s\S]*?<\/think>');
+    raw = raw.replaceAll(thinkRegex, '').trim();
+    final match = codeBlockRegex.firstMatch(raw);
+    if (match != null) return match.group(1)!.trim();
+
+    return raw.trim();
+  }
+
+}
+
+abstract class OpenAiCompatible extends Models{
+  String get baseUrl;
+  @protected @override String get url => "$baseUrl/chat/completions";
+
+  @override
+  Map<String, String> get headers => {
+    "Content-Type": "application/json",
+    "Authorization": "Bearer $apiKey"
+  };
+
+  @override
+  Map<String, dynamic> buildRequest(String code) {
+    return {
+      "model": model,
+      "messages": [
+        {
+          "role": "system",
+          "content" : instruction
+        },
+        {
+          "role": "user",
+          "content": code
+          }
+      ]
+    };
+  }
+
+  @override
+  String responseParser(dynamic response) {
+    return response["choices"][0]["message"]["content"];
   }
 }
 
 class Gemini extends Models {
-  @override
-  final String url;
-  @override
-  final String  apiKey;
-  @override
-  final String model;
+  @override final String url, apiKey, model;
   @override
   Map<String, String> get headers => {'Content-Type': 'application/json'};
   int? temperature, maxOutputTokens, topP, topK, stopSequences;
@@ -54,12 +100,17 @@ class Gemini extends Models {
     }):url = 'https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent?key=$apiKey';
 
   @override
+  String responseParser(dynamic response) {
+    return response["candidates"][0]["content"]["parts"][0]["text"];
+  }
+
+  @override
   Map<String, dynamic> buildRequest(String code) {
     return {
       "systemInstruction": {
         "parts": [
           {
-            "text": "You are a code completion engine. Given the provided code where the cursor is represented by the placeholder '|CURSOR|', generate only the code that should be inserted at that position. Do not include the placeholder or any explanations. Return only the code to insert."
+            "text": instruction
 
           }
         ]
@@ -87,12 +138,14 @@ class Gemini extends Models {
 }
 
 class OpenAI extends Models {
-  @override
-  final String url = 'https://api.openai.com/v1/responses', apiKey;
-  @override
-  final String model;
+  @override final String url = 'https://api.openai.com/v1/responses', apiKey, model;
 
   OpenAI({required this.apiKey, required this.model});
+
+  @override
+  String responseParser(dynamic response) {
+    return response[0]["content"][0]["text"];
+  }
 
   @override
   Map<String, String> get headers => {
@@ -104,19 +157,22 @@ class OpenAI extends Models {
   Map<String, dynamic> buildRequest(String code) {
     return {
       "model": model,
-      "instructions": "You are a code completion engine. Given the provided code where the cursor is represented by the placeholder '|CURSOR|', generate only the code that should be inserted at that position. Do not include the placeholder or any explanations. Return only the code to insert.",
+      "instructions": instruction,
       "input": code,
     };
   }
 }
 
-class Gork extends Models {
-  @override
-  final String url = 'https://api.x.ai/v1/chat/completions', apiKey;
-  @override
-  String? get model => null;
+class Grok extends Models {
+  @override final String url = 'https://api.x.ai/v1/chat/completions', apiKey, model;
+  final String? temprature;
 
-  Gork({required this.apiKey});
+  Grok({required this.apiKey, required this.model, this.temprature});
+
+  @override
+  String responseParser(dynamic response) {
+    return response["choices"][0]["message"]["content"];
+  }
 
   @override
   Map<String, String> get headers => {
@@ -130,25 +186,28 @@ class Gork extends Models {
       "messages" : [
         {
           "role": "system",
-          "content": "You are a code completion engine. Given the provided code where the cursor is represented by the placeholder '|CURSOR|', generate only the code that should be inserted at that position. Do not include the placeholder or any explanations. Return only the code to insert."
+          "content": instruction
         },
         {
           "role": "user",
           "content": code
         }
-      ]
+      ],
+      "model": model
     };
   }
 }
 
 class Claude extends Models {
-  @override
-  final String url = 'https://api.anthropic.com/v1/messages', apiKey;
-  @override
-  final String model;
+  @override final String url = 'https://api.anthropic.com/v1/messages', apiKey, model;
   final String version;
 
   Claude({required this.apiKey, required this.version, required this.model});
+
+  @override
+  String responseParser(dynamic response) {
+    return response["content"][0]["text"];
+  }
 
   @override
   Map<String, String> get headers => {
@@ -162,7 +221,7 @@ class Claude extends Models {
     return {
       "model": model,
       "max_tokens": 1024,
-      "system": "You are a code completion engine. Given the provided code where the cursor is represented by the placeholder '|CURSOR|', generate only the code that should be inserted at that position. Do not include the placeholder or any explanations. Return only the code to insert.",
+      "system": instruction,
       "messages": [
         {
           "role": "user",
@@ -174,9 +233,14 @@ class Claude extends Models {
 }
 
 class DeepSeek extends Models{
-  @override
-  final String url = "https://api.deepseek.com/chat/completions", apiKey, model;
+  @override final String url = "https://api.deepseek.com/chat/completions", apiKey, model;
+
   DeepSeek({required this.apiKey, required this.model});
+
+  @override
+  String responseParser(dynamic response) {
+    return response["choices"][0]["message"]["content"];
+  }
 
   @override
   Map<String, String> get headers => {
@@ -189,38 +253,65 @@ class DeepSeek extends Models{
     return {
       "model": model,
       "messages":[
-        {"role" : "system", "content":"You are a code completion engine. Given the provided code where the cursor is represented by the placeholder '|CURSOR|', generate only the code that should be inserted at that position. Do not include the placeholder or any explanations. Return only the code to insert."},
+        {"role" : "system", "content":instruction},
         {"role" : "user", "content":code},
       ],
     };
   }
-  
+}
+
+class Gorq extends OpenAiCompatible{
+  @override String get baseUrl => "https://api.groq.com/openai/v1";
+  @override final String apiKey, model;
+  Gorq({required this.apiKey, required this.model});
+}
+
+class TogetherAi extends OpenAiCompatible{
+  @override String get baseUrl => "https://api.together.xyz/v1";
+  @override final String apiKey, model;
+  TogetherAi({required this.apiKey, required this.model});
+}
+
+class Sonar extends OpenAiCompatible{
+  @override String get baseUrl => "https://api.perplexity.ai";
+  @override final String apiKey, model;
+  Sonar({required this.apiKey, required this.model});
+}
+
+class OpenRouter extends OpenAiCompatible{
+  @override String get baseUrl => "https://openrouter.ai/api/v1";
+  @override final String apiKey, model;
+  OpenRouter({required this.apiKey, required this.model});
+}
+
+class FireWorks extends OpenAiCompatible{
+  @override String get baseUrl => "https://api.fireworks.ai/inference/v1";
+  @override final String apiKey, model;
+  FireWorks({required this.apiKey, required this.model});
 }
 
 class CustomModel extends Models {
   @override
   final String url;
   @override
-  final String? apiKey;
+  String? get apiKey => null;
   @override
-  final String? model;
-  final String? apiKeyHeader;
-  final bool apiKeyInQueryParams;
+  String? get model => null;
   final String httpMethod;
   final Map<String, String> customHeaders;
   final Map<String, dynamic> Function(String code, String instruction)? requestBuilder;
+  final String Function(dynamic response) customParser;
 
   CustomModel({
     required this.url,
-    this.apiKey,
-    this.model,
-    this.apiKeyHeader,
-    this.apiKeyInQueryParams = false,
+    required this.customHeaders,
+    required this.requestBuilder,
+    required this.customParser,
     this.httpMethod = 'POST',
-    Map<String, String>? customHeaders,
-    this.requestBuilder,
-  }) : 
-    customHeaders = customHeaders ?? {};
+  });
+
+  @override
+  String responseParser(dynamic response) => customParser(response);
 
   @override
   Map<String, String> get headers {
@@ -229,29 +320,11 @@ class CustomModel extends Models {
       ...customHeaders,
     };
 
-    if (apiKey != null && apiKeyHeader != null && !apiKeyInQueryParams) {
-      headers[apiKeyHeader!] = apiKeyHeader!.toLowerCase().contains('bearer')
-          ? 'Bearer $apiKey'
-          : apiKey!;
-    }
-
     return headers;
-  }
-
-  Uri get _uri {
-    final uri = Uri.parse(url);
-    if (apiKey != null && apiKeyInQueryParams) {
-      return uri.replace(queryParameters: {
-        ...uri.queryParameters,
-        'api_key': apiKey!,
-      });
-    }
-    return uri;
   }
 
 @override
   Map<String, dynamic> buildRequest(String code) {
-    const String instruction = "You are a code completion engine. Given the provided code where the cursor is represented by the placeholder '|CURSOR|', generate only the code that should be inserted at that position. Do not include the placeholder or any explanations. Return only the code to insert.";
     if (requestBuilder != null) {
       return requestBuilder!(code, instruction);
     }
@@ -265,11 +338,10 @@ class CustomModel extends Models {
     };
   }
 
-
   @override
   Future<String> completionResponse(String code) async {
     try {
-      final uri = _uri;
+      final uri = Uri.parse(url);
       final response = httpMethod.toUpperCase() == 'GET'
         ? await http.get(uri, headers: headers)
         : await http.post(
@@ -279,7 +351,7 @@ class CustomModel extends Models {
           );
 
       if (response.statusCode == 200) {
-        return response.body;
+        return responseParser(jsonDecode(response.body));
       } else {
         throw HttpException(
           'Request failed with status ${response.statusCode}\n ${response.body}',
