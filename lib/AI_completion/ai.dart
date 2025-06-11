@@ -208,7 +208,7 @@ class CustomModel extends Models {
   final bool apiKeyInQueryParams;
   final String httpMethod;
   final Map<String, String> customHeaders;
-  final Map<String, dynamic> Function(String code)? requestBuilder;
+  final Map<String, dynamic> Function(String code, String instruction)? requestBuilder;
 
   CustomModel({
     required this.url,
@@ -249,20 +249,22 @@ class CustomModel extends Models {
     return uri;
   }
 
-  @override
+@override
   Map<String, dynamic> buildRequest(String code) {
+    const String instruction = "You are a code completion engine. Given the provided code where the cursor is represented by the placeholder '|CURSOR|', generate only the code that should be inserted at that position. Do not include the placeholder or any explanations. Return only the code to insert.";
     if (requestBuilder != null) {
-      return requestBuilder!(code);
+      return requestBuilder!(code, instruction);
     }
     return {
       if (model != null) 'model': model,
       'code': code,
       'parameters': {
-        'instruction': "You are a code completion engine. Given the provided code where the cursor is represented by the placeholder '|CURSOR|', generate only the code that should be inserted at that position. Do not include the placeholder or any explanations. Return only the code to insert.",
+        'instruction': instruction,
         'temperature': 0.2,
       }
     };
   }
+
 
   @override
   Future<String> completionResponse(String code) async {
