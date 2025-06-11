@@ -20,21 +20,21 @@ sealed class Models{
   String? get model;
   Map<String, String> get headers;
 
-  Map<String, dynamic> buildRequest(String code, int cursorPosition);
+  Map<String, dynamic> buildRequest(String code);
 
-  Future<String> completionResponse(String code, int cursorPosition) async{
+  Future<String> completionResponse(String code) async{
     final uri = Uri.parse(url);
-    final response = await http.post(uri, headers: headers, body: jsonEncode(buildRequest(code, cursorPosition)));
+    final response = await http.post(uri, headers: headers, body: jsonEncode(buildRequest(code)));
     if(response.statusCode == 200){
       return response.body;
     }
-    throw HttpException("Failed to load AI suggetion \nStatus code: ${response.statusCode}\n error: ${response.body}");
+    throw HttpException("Failed to load AI suggestion \nStatus code: ${response.statusCode}\n error: ${response.body}");
   }
 }
 
 class Gemini extends Models {
   @override
-  late final String url;
+  final String url;
   @override
   final String  apiKey;
   @override
@@ -45,23 +45,22 @@ class Gemini extends Models {
 
   Gemini({
       required this.apiKey,
-      this.model = 'gemini-2.5-flash',
+      this.model = 'gemini-2.0-flash',
       this.temperature,
       this.maxOutputTokens,
       this.topP,
       this.topK,
       this.stopSequences,
-    }){
-    url = 'https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent?key=$apiKey';
-  }
+    }):url = 'https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent?key=$apiKey';
 
   @override
-  Map<String, dynamic> buildRequest(String code, int cursorPosition) {
+  Map<String, dynamic> buildRequest(String code) {
     return {
       "systemInstruction": {
         "parts": [
           {
-            "text": "You are a code completion engine. Given the provided code and cursor position, generate only the code that should be inserted at the cursor to complete the code. Do not provide explanations or any other text."
+            "text": "You are a code completion engine. Given the provided code where the cursor is represented by the placeholder '|CURSOR|', generate only the code that should be inserted at that position. Do not include the placeholder or any explanations. Return only the code to insert."
+
           }
         ]
       },
@@ -69,7 +68,7 @@ class Gemini extends Models {
         {
           "parts":[
             {
-              "text": "code: $code \n cursorPosition/index: $cursorPosition"
+              "text": code
             }
           ]
         },
@@ -102,11 +101,11 @@ class OpenAI extends Models {
   };
 
   @override
-  Map<String, dynamic> buildRequest(String code, int cursorPosition) {
+  Map<String, dynamic> buildRequest(String code) {
     return {
       "model": model,
-      "instructions": "You are a code completion engine. Given the provided code and cursor position, generate only the code that should be inserted at the cursor to complete the code. Do not provide explanations or any other text.",
-      "input": "code: $code\n cursor position / index: $cursorPosition",
+      "instructions": "You are a code completion engine. Given the provided code where the cursor is represented by the placeholder '|CURSOR|', generate only the code that should be inserted at that position. Do not include the placeholder or any explanations. Return only the code to insert.",
+      "input": code,
     };
   }
 }
@@ -115,7 +114,7 @@ class Gork extends Models {
   @override
   final String url = 'https://api.x.ai/v1/chat/completions', apiKey;
   @override
-  final String? model = null;
+  String? get model => null;
 
   Gork({required this.apiKey});
 
@@ -126,16 +125,16 @@ class Gork extends Models {
   };
 
   @override
-  Map<String, dynamic> buildRequest(String code, int cursorPosition) {
+  Map<String, dynamic> buildRequest(String code) {
     return {
       "messages" : [
         {
           "role": "system",
-          "content": "You are a code completion engine. Given the provided code and cursor position, generate only the code that should be inserted at the cursor to complete the code. Do not provide explanations or any other text."
+          "content": "You are a code completion engine. Given the provided code where the cursor is represented by the placeholder '|CURSOR|', generate only the code that should be inserted at that position. Do not include the placeholder or any explanations. Return only the code to insert."
         },
         {
           "role": "user",
-          "content": "code: $code\ncursor position / index: $cursorPosition"
+          "content": code
         }
       ]
     };
@@ -159,22 +158,43 @@ class Claude extends Models {
   };
 
   @override
-  Map<String, dynamic> buildRequest(String code, int cursorPosition) {
+  Map<String, dynamic> buildRequest(String code) {
     return {
       "model": model,
       "max_tokens": 1024,
+      "system": "You are a code completion engine. Given the provided code where the cursor is represented by the placeholder '|CURSOR|', generate only the code that should be inserted at that position. Do not include the placeholder or any explanations. Return only the code to insert.",
       "messages": [
         {
-          "role": "assistant",
-          "content": "You are a code completion engine. Given the provided code and cursor position, generate only the code that should be inserted at the cursor to complete the code. Do not provide explanations or any other text."
-        },
-        {
           "role": "user",
-          "content": "code: $code\ncursor position / index: $cursorPosition"
+          "content": code
         }
       ]
     };
   }
+}
+
+class DeepSeek extends Models{
+  @override
+  final String url = "https://api.deepseek.com/chat/completions", apiKey, model;
+  DeepSeek({required this.apiKey, required this.model});
+
+  @override
+  Map<String, String> get headers => {
+    "Content-Type": "application/json",
+    "Authorization": "Bearer $apiKey"
+  };
+
+  @override
+  Map<String, dynamic> buildRequest(String code) {
+    return {
+      "model": model,
+      "messages":[
+        {"role" : "system", "content":"You are a code completion engine. Given the provided code where the cursor is represented by the placeholder '|CURSOR|', generate only the code that should be inserted at that position. Do not include the placeholder or any explanations. Return only the code to insert."},
+        {"role" : "user", "content":code},
+      ],
+    };
+  }
+  
 }
 
 class CustomModel extends Models {
@@ -188,7 +208,7 @@ class CustomModel extends Models {
   final bool apiKeyInQueryParams;
   final String httpMethod;
   final Map<String, String> customHeaders;
-  final Map<String, dynamic> Function(String code, int cursorPosition)? requestBuilder;
+  final Map<String, dynamic> Function(String code)? requestBuilder;
 
   CustomModel({
     required this.url,
@@ -230,24 +250,22 @@ class CustomModel extends Models {
   }
 
   @override
-  Map<String, dynamic> buildRequest(String code, int cursorPosition) {
+  Map<String, dynamic> buildRequest(String code) {
     if (requestBuilder != null) {
-      return requestBuilder!(code, cursorPosition);
+      return requestBuilder!(code);
     }
-
     return {
       if (model != null) 'model': model,
       'code': code,
-      'cursor_position': cursorPosition,
       'parameters': {
-        'instruction': 'Complete the code at the given position',
+        'instruction': "You are a code completion engine. Given the provided code where the cursor is represented by the placeholder '|CURSOR|', generate only the code that should be inserted at that position. Do not include the placeholder or any explanations. Return only the code to insert.",
         'temperature': 0.2,
       }
     };
   }
 
   @override
-  Future<String> completionResponse(String code, int cursorPosition) async {
+  Future<String> completionResponse(String code) async {
     try {
       final uri = _uri;
       final response = httpMethod.toUpperCase() == 'GET'
@@ -255,14 +273,14 @@ class CustomModel extends Models {
         : await http.post(
             uri,
             headers: headers,
-            body: jsonEncode(buildRequest(code, cursorPosition)),
+            body: jsonEncode(buildRequest(code)),
           );
 
       if (response.statusCode == 200) {
         return response.body;
       } else {
         throw HttpException(
-          'Request failed with status ${response.statusCode}',
+          'Request failed with status ${response.statusCode}\n ${response.body}',
           uri: uri,
         );
       }
