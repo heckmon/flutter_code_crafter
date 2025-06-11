@@ -79,7 +79,11 @@ abstract class OpenAiCompatible extends Models{
 
   @override
   String responseParser(dynamic response) {
-    return response["choices"][0]["message"]["content"];
+    try {
+      return response["choices"][0]["message"]["content"];
+    } catch (e) {
+      throw FormatException("Failed to parse AI response: $e \nResponse: $response");
+    }
   }
 }
 
@@ -101,7 +105,11 @@ class Gemini extends Models {
 
   @override
   String responseParser(dynamic response) {
-    return response["candidates"][0]["content"]["parts"][0]["text"];
+    try {
+      return response["candidates"][0]["content"]["parts"][0]["text"];
+    } catch (e) {
+      throw FormatException("Failed to parse AI response: $e \nResponse: $response");
+    }
   }
 
   @override
@@ -144,7 +152,11 @@ class OpenAI extends Models {
 
   @override
   String responseParser(dynamic response) {
-    return response[0]["content"][0]["text"];
+    try {
+      return response[0]["content"][0]["text"];
+    } catch (e) {
+      throw FormatException("Failed to parse AI response: $e \nResponse: $response");
+    }
   }
 
   @override
@@ -163,41 +175,6 @@ class OpenAI extends Models {
   }
 }
 
-class Grok extends Models {
-  @override final String url = 'https://api.x.ai/v1/chat/completions', apiKey, model;
-  final String? temprature;
-
-  Grok({required this.apiKey, required this.model, this.temprature});
-
-  @override
-  String responseParser(dynamic response) {
-    return response["choices"][0]["message"]["content"];
-  }
-
-  @override
-  Map<String, String> get headers => {
-    'Content-Type': 'application/json',
-    'Authorization': 'Bearer $apiKey',
-  };
-
-  @override
-  Map<String, dynamic> buildRequest(String code) {
-    return {
-      "messages" : [
-        {
-          "role": "system",
-          "content": instruction
-        },
-        {
-          "role": "user",
-          "content": code
-        }
-      ],
-      "model": model
-    };
-  }
-}
-
 class Claude extends Models {
   @override final String url = 'https://api.anthropic.com/v1/messages', apiKey, model;
   final String version;
@@ -206,7 +183,11 @@ class Claude extends Models {
 
   @override
   String responseParser(dynamic response) {
-    return response["content"][0]["text"];
+    try {
+      return response["content"][0]["text"];
+    } catch (e) {
+      throw FormatException("Failed to parse AI response: $e \nResponse: $response");
+    }
   }
 
   @override
@@ -232,32 +213,16 @@ class Claude extends Models {
   }
 }
 
-class DeepSeek extends Models{
-  @override final String url = "https://api.deepseek.com/chat/completions", apiKey, model;
+class Grok extends OpenAiCompatible{
+  @override String get baseUrl => "https://api.x.ai/v1";
+  @override final String apiKey, model;
+  Grok({required this.apiKey, required this.model});
+}
 
+class DeepSeek extends OpenAiCompatible{
+  @override String get baseUrl => "https://api.deepseek.com";
+  @override final String apiKey, model;
   DeepSeek({required this.apiKey, required this.model});
-
-  @override
-  String responseParser(dynamic response) {
-    return response["choices"][0]["message"]["content"];
-  }
-
-  @override
-  Map<String, String> get headers => {
-    "Content-Type": "application/json",
-    "Authorization": "Bearer $apiKey"
-  };
-
-  @override
-  Map<String, dynamic> buildRequest(String code) {
-    return {
-      "model": model,
-      "messages":[
-        {"role" : "system", "content":instruction},
-        {"role" : "user", "content":code},
-      ],
-    };
-  }
 }
 
 class Gorq extends OpenAiCompatible{
@@ -311,7 +276,13 @@ class CustomModel extends Models {
   });
 
   @override
-  String responseParser(dynamic response) => customParser(response);
+  String responseParser(dynamic response) {
+    try {
+      return customParser(response);
+    } catch (e) {
+      throw FormatException("Failed to parse AI response: $e \nResponse: $response");
+    }
+  }
 
   @override
   Map<String, String> get headers {
