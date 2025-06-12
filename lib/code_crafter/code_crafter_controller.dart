@@ -92,9 +92,7 @@ class CodeCrafterController extends TextEditingController{
         int start = fold.startLine - 1;
         int end = fold.endLine;
         if (start >= 0 && end <= lines.length && start < end) {
-          lines[start] = "${lines[start]}...${((){
-            return '\u200D' * ((lines.sublist(start+1, end).join('\n').length) - 2);
-          })()}";
+          lines[start] = "${lines[start]}...${'\u200D' * ((lines.sublist(start+1, end).join('\n').length) - 2)}";
           lines.removeRange(start + 1, end);
         }
       }
@@ -114,13 +112,23 @@ class CodeCrafterController extends TextEditingController{
         final int cursorPosition = selection.baseOffset;
         final String textBeforeCursor = newText.substring(0, cursorPosition);
         final String textAfterCursor = newText.substring(cursorPosition);
+        final String lastTypedChar = textBeforeCursor.isNotEmpty ? textBeforeCursor.characters.last.replaceAll("\n", '') : '';
         final List<Node>? beforeCursorNodes = highlight.parse(textBeforeCursor, language: _langId).nodes;
+
+        if(Shared().aiResponse![0] == lastTypedChar){
+          Shared().aiResponse = Shared().aiResponse!.substring(1);
+        }
+        else if(lastTypedChar.trim().isNotEmpty){
+          Shared().aiResponse = null;
+        }
+
         TextSpan aiOverlay = TextSpan(
           text: Shared().aiResponse,
           style: TextStyle(color: Colors.grey,fontStyle: FontStyle.italic)
         );
         final List<Node>? afterCursorNodes = highlight.parse(textAfterCursor,language: _langId).nodes;
         
+
         if(beforeCursorNodes != null){
           if(cursorPosition != selection.baseOffset){
             Shared().aiResponse = null;
@@ -140,7 +148,7 @@ class CodeCrafterController extends TextEditingController{
       if(nodes != null && editorTheme.isNotEmpty){
         return TextSpan(
           style: baseStyle,
-          children: [..._convert(nodes)]
+          children: _convert(nodes)
         );
       }
       else{

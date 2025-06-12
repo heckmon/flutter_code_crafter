@@ -85,7 +85,6 @@ class _CodeCrafterState extends State<CodeCrafter> {
         );
         _value = widget.controller.text;
       }
-      print(Shared().aiResponse);
     });
     super.initState();
   }
