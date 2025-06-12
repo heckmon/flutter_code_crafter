@@ -124,10 +124,9 @@ class CodeCrafterController extends TextEditingController{
 
         TextSpan aiOverlay = TextSpan(
           text: Shared().aiResponse,
-          style: TextStyle(color: Colors.grey,fontStyle: FontStyle.italic)
+          style: Shared().aiOverlayStyle ?? TextStyle(color: Colors.grey,fontStyle: FontStyle.italic)
         );
         final List<Node>? afterCursorNodes = highlight.parse(textAfterCursor,language: _langId).nodes;
-        
 
         if(beforeCursorNodes != null){
           if(cursorPosition != selection.baseOffset){

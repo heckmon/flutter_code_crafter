@@ -5,12 +5,11 @@ import 'package:http/http.dart' as http;
 
 class AiCompletion{
   Models model;
-  bool cacheResponse, enableCompletion;
+  bool enableCompletion;
   int debounceTime;
   
   AiCompletion({
     required this.model,
-    this.cacheResponse = true,
     this.debounceTime = 1000,
     this.enableCompletion =true
   });

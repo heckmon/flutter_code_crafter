@@ -10,7 +10,7 @@ class Shared {
   String? aiResponse;
   double gutterWidth = 65;
   Map<String, TextStyle> theme = {};
-  TextStyle? textStyle;
+  TextStyle? textStyle, aiOverlayStyle;
   int tabSize = 0;
   CodeCrafterController controller = CodeCrafterController();
   BoxConstraints constraints = BoxConstraints();

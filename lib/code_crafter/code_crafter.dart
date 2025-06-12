@@ -10,7 +10,7 @@ import 'package:flutter/services.dart';
 
 class CodeCrafter extends StatefulWidget {
   final CodeCrafterController controller;
-  final TextStyle? textStyle;
+  final TextStyle? textStyle, aiOverlayStyle;
   final Color? cursorColor, selectionColor, selectionHandleColor;
   final Map<String, TextStyle>? editorTheme;
   final int tabSize;
@@ -26,6 +26,7 @@ class CodeCrafter extends StatefulWidget {
     this.focusNode,
     this.textStyle,
     this.gutterStyle,
+    this.aiOverlayStyle,
     this.editorTheme,
     this.aiCompletion,
     this.selectionHandleColor,
@@ -60,6 +61,7 @@ class _CodeCrafterState extends State<CodeCrafter> {
     _cursorPostion = widget.controller.selection.baseOffset;
     Shared().theme = widget.editorTheme ?? {};
     Shared().textStyle = widget.textStyle;
+    Shared().aiOverlayStyle = widget.aiOverlayStyle;
     Shared().controller = widget.controller;
     Shared().tabSize = widget.tabSize;
     widget.controller.addListener(() {

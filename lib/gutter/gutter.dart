@@ -216,7 +216,7 @@ void _getFoldRanges(String code, ValueNotifier<List<LineState>> lineStates) {
   final lineStateCopy = lineStates.value.map((e) => LineState(
     lineNumber: e.lineNumber,
     hasBreakpoint: e.hasBreakpoint,
-  )..foldRange = e.foldRange).toList();
+  )).toList();
   Map<String, List<int>> stacks = {"{": [], "[" : [], "(" : [], "<":  []};
   const matchingBrackets = {"{": "}", "[": "]", "(": ")", "<": ">"};
   for(final openBracket in matchingBrackets.keys){
