@@ -165,7 +165,7 @@ class LspSocketConfig extends LspConfig {
     required Map<String, dynamic> params,
   }) async {
     _channel.sink.add(jsonEncode({
-      'jsonr1pc': '2.0',
+      'jsonrpc': '2.0',
       'method': method,
       'params': params,
     }));
