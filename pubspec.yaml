@@ -14,7 +14,8 @@ dependencies:
   highlight: ^0.7.0
   http: ^1.4.0
   meta: ^1.16.0
-
+  web_socket_channel: ^3.0.3
+  
 dev_dependencies:
   flutter_test:
     sdk: flutter
