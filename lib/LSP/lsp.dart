@@ -6,7 +6,8 @@ import 'package:web_socket_channel/web_socket_channel.dart';
 sealed class LspConfig {
   final String filePath, languageId;
   final StreamController<Map<String, dynamic>> _responseController = StreamController.broadcast();
-  var _nextId = 1;
+  int _nextId = 1;
+  final _openDocuments = <String, int>{};
 
   LspConfig({
     required this.filePath,
@@ -25,14 +26,19 @@ sealed class LspConfig {
     required Map<String, dynamic> params,
   });
 
-  Future<void> initialize() async {
+  Future<void> initialize({required String workspacePath}) async {
     final response = await _sendRequest(
       method: 'initialize',
       params: {
+        'processId': pid,
+        'workspaceFolders': [
+          {'uri': Uri.file(workspacePath).toString(), 'name': 'workspace'}
+        ],
         'capabilities': {
           'textDocument': {
             'completion': {'completionItem': {'snippetSupport': false}}
-          }
+          },
+          'hover': {'contentFormat': ['markdown']}
         },
       },
     );
@@ -44,14 +50,23 @@ sealed class LspConfig {
     await _sendNotification(method: 'initialized', params: {});
   }
 
+  Map<String, dynamic> _commonParams(int line, int character) {
+    return {
+      'textDocument': {'uri': Uri.file(filePath).toString()},
+      'position': {'line': line, 'character': character},
+    };
+  }
+
   Future<void> openDocument() async {
+    final version = (_openDocuments[filePath] ?? 0) + 1;
+    _openDocuments[filePath] = version;
     await _sendNotification(
       method: 'textDocument/didOpen',
       params: {
         'textDocument': {
           'uri': Uri.file(filePath).toString(),
           'languageId': languageId,
-          'version': 1,
+          'version': version,
           'text': await File(filePath).readAsString(),
         }
       },
@@ -59,13 +74,48 @@ sealed class LspConfig {
     await Future.delayed(Duration(milliseconds: 300));
   }
 
+  Future<void> updateDocument(String content) async {
+    if (!_openDocuments.containsKey(filePath)) {
+      throw StateError('Document must be opened first');
+    }
+    
+    final version = _openDocuments[filePath]! + 1;
+    _openDocuments[filePath] = version;
+    
+    await _sendNotification(
+      method: 'textDocument/didChange',
+      params: {
+        'textDocument': {
+          'uri': Uri.file(filePath).toString(),
+          'version': version,
+        },
+        'contentChanges': [
+          {
+            'text': content,
+          }
+        ]
+      },
+    );
+  }
+
+  Future<void> closeDocument() async {
+    if (!_openDocuments.containsKey(filePath)) return;
+    
+    await _sendNotification(
+      method: 'textDocument/didClose',
+      params: {
+        'textDocument': {
+          'uri': Uri.file(filePath).toString(),
+        }
+      },
+    );
+    _openDocuments.remove(filePath);
+  }
+
   Future<List<String>> getCompletions(int line, int character) async {
     final response = await _sendRequest(
       method: 'textDocument/completion',
-      params: {
-        'textDocument': {'uri': Uri.file(filePath).toString()},
-        'position': {'line': line, 'character': character},
-      },
+      params: _commonParams(line, character)
     );
 
     return (response['result']['items'] as List?)
@@ -73,44 +123,30 @@ sealed class LspConfig {
         .toList() ?? [];
   }
 
-  Future<List<String>> getHover(int line, int character) async {
+  Future<String> getHover(int line, int character) async {
     final response = await _sendRequest(
       method: 'textDocument/hover',
-      params: {
-        'textDocument': {'uri': Uri.file(filePath).toString()},
-        'position': {'line': line, 'character': character},
-      },
+      params: _commonParams(line, character)
     );
-    return (response['result']['items'] as List?)
-        ?.map((item) => item['label'] as String)
-        .toList() ?? [];
+    return response['result']['contents']['value'] ?? '';
   }
 
-  Future<List<String>> getDefinition(int line, int character) async {
-    final response = await _sendRequest(
+  Future<String> getDefinition(int line, int character) async {
+    final response= await _sendRequest(
       method: 'textDocument/definition',
-      params: {
-        'textDocument': {'uri': Uri.file(filePath).toString()},
-        'position': {'line': line, 'character': character},
-      },
+      params: _commonParams(line, character)
     );
-    return (response['result']['items'] as List?)
-        ?.map((item) => item['label'] as String)
-        .toList() ?? [];
+    return response['result'][1]['uri'] ?? '';
   }
 
-  Future<List<String>> getReferences(int line, int character) async {
+  Future<List<dynamic>> getReferences(int line, int character) async {
+    final params = _commonParams(line, character);
+    params['context'] = {'includeDeclaration': true};
     final response = await _sendRequest(
       method: 'textDocument/references',
-      params: {
-        'textDocument': {'uri': Uri.file(filePath).toString()},
-        'position': {'line': line, 'character': character},
-        'context': {'includeDeclaration': true},
-      },
+      params: params
     );
-    return (response['result']['items'] as List?)
-        ?.map((item) => item['label'] as String)
-        .toList() ?? [];
+    return response['result'];
   }
 
   Stream<Map<String, dynamic>> get responses => _responseController.stream;
@@ -133,7 +169,7 @@ class LspSocketConfig extends LspConfig {
         final json = jsonDecode(data as String);
         _responseController.add(json);
       } catch (e) {
-        print('Error parsing response: $e');
+        throw FormatException('Invalid JSON response: $data');
       }
     });
   }
@@ -217,36 +253,28 @@ class LspStdioConfig extends LspConfig {
   void _handleStdoutData(List<int> data) {
     _buffer.addAll(data);
     while (_buffer.isNotEmpty) {
-      // Look for header
       final headerEnd = _findHeaderEnd();
       if (headerEnd == -1) return;
-
-      // Parse Content-Length
       final header = utf8.decode(_buffer.sublist(0, headerEnd));
       final contentLength = int.parse(
         RegExp(r'Content-Length: (\d+)').firstMatch(header)?.group(1) ?? '0'
       );
-
-      // Check if complete message is available
       if (_buffer.length < headerEnd + 4 + contentLength) return;
-
-      // Extract and parse message
       final messageStart = headerEnd + 4;
       final messageEnd = messageStart + contentLength;
       final messageBytes = _buffer.sublist(messageStart, messageEnd);
       _buffer.removeRange(0, messageEnd);
-
       try {
         final json = jsonDecode(utf8.decode(messageBytes));
         _responseController.add(json);
       } catch (e) {
-        print('Error parsing message: $e');
+        throw FormatException('Invalid JSON message: ${utf8.decode(messageBytes)}');
       }
     }
   }
 
   int _findHeaderEnd() {
-    final endSequence = [13, 10, 13, 10]; // \r\n\r\n
+    final endSequence = [13, 10, 13, 10];
     for (var i = 0; i <= _buffer.length - endSequence.length; i++) {
       if (List.generate(endSequence.length, (j) => _buffer[i + j]).every((byte) => endSequence.contains(byte))) {
         return i;
