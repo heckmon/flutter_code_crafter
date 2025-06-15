@@ -4,13 +4,14 @@ import 'dart:io';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
 sealed class LspConfig {
-  final String filePath, languageId;
+  final String filePath, languageId, workspacePath;
   final StreamController<Map<String, dynamic>> _responseController = StreamController.broadcast();
   int _nextId = 1;
   final _openDocuments = <String, int>{};
 
   LspConfig({
     required this.filePath,
+    required this.workspacePath,
     required this.languageId
   });
 
@@ -26,7 +27,7 @@ sealed class LspConfig {
     required Map<String, dynamic> params,
   });
 
-  Future<void> initialize({required String workspacePath}) async {
+  Future<void> initialize() async {
     final response = await _sendRequest(
       method: 'initialize',
       params: {
@@ -159,6 +160,7 @@ class LspSocketConfig extends LspConfig {
 
   LspSocketConfig({
     required super.filePath,
+    required super.workspacePath,
     required super.languageId,
     required this.serverUrl,
   }):_channel = WebSocketChannel.connect(Uri.parse(serverUrl));
@@ -169,7 +171,7 @@ class LspSocketConfig extends LspConfig {
         final json = jsonDecode(data as String);
         _responseController.add(json);
       } catch (e) {
-        throw FormatException('Invalid JSON response: $data');
+        throw FormatException('Invalid JSON response: $data', e);
       }
     });
   }
@@ -224,6 +226,7 @@ class LspStdioConfig extends LspConfig {
   LspStdioConfig._({
     required this.executable,
     required super.filePath,
+    required super.workspacePath,
     required super.languageId,
     this.args = const [],
   });
@@ -231,6 +234,7 @@ class LspStdioConfig extends LspConfig {
   static Future<LspStdioConfig> start({
     required String executable,
     required String filePath,
+    required String workspacePath,
     required String languageId,
     List<String>? args
   }) async {
@@ -238,6 +242,7 @@ class LspStdioConfig extends LspConfig {
       executable: executable,
       filePath: filePath,
       languageId: languageId,
+      workspacePath: workspacePath,
       args: args,
     );
     await config._startProcess();
@@ -247,7 +252,7 @@ class LspStdioConfig extends LspConfig {
   Future<void> _startProcess() async {
     _process = await Process.start(executable, args ?? []);
     _process.stdout.listen(_handleStdoutData);
-    _process.stderr.listen((data) => print('STDERR: ${utf8.decode(data)}'));
+    _process.stderr.listen((data) => throw Exception('LSP process error: ${utf8.decode(data)}'));
   }
 
   void _handleStdoutData(List<int> data) {
@@ -268,7 +273,7 @@ class LspStdioConfig extends LspConfig {
         final json = jsonDecode(utf8.decode(messageBytes));
         _responseController.add(json);
       } catch (e) {
-        throw FormatException('Invalid JSON message: ${utf8.decode(messageBytes)}');
+        throw FormatException('Invalid JSON message $e', utf8.decode(messageBytes));
       }
     }
   }

@@ -1,16 +1,19 @@
 import 'dart:async';
-import './code_crafter_controller.dart';
-import '../AI_completion/ai.dart';
+import 'dart:io';
+import '../LSP/lsp.dart';
 import '../utils/utils.dart';
 import '../utils/shared.dart';
 import '../gutter/gutter.dart';
+import '../AI_completion/ai.dart';
 import '../gutter/gutter_style.dart';
+import './code_crafter_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 class CodeCrafter extends StatefulWidget {
   final CodeCrafterController controller;
-  final TextStyle? textStyle, aiOverlayStyle;
+  final String? initialText, filePath;
+  final TextStyle? textStyle, aiCompletionTextStyle;
   final Color? cursorColor, selectionColor, selectionHandleColor;
   final Map<String, TextStyle>? editorTheme;
   final int tabSize;
@@ -20,15 +23,19 @@ class CodeCrafter extends StatefulWidget {
   final FocusNode? focusNode;
   final EditorField? editorField;
   final AiCompletion? aiCompletion;
+  final LspConfig? lspConfig;
   const CodeCrafter({
     super.key,
     required this.controller,
+    this.initialText,
+    this.filePath,
     this.focusNode,
     this.textStyle,
     this.gutterStyle,
-    this.aiOverlayStyle,
     this.editorTheme,
     this.aiCompletion,
+    this.aiCompletionTextStyle,
+    this.lspConfig,
     this.selectionHandleColor,
     this.selectionColor,
     this.cursorColor,
@@ -57,14 +64,53 @@ class _CodeCrafterState extends State<CodeCrafter> {
   void initState() {
     _keyboardFocus = FocusNode();
     _codeFocus = widget.focusNode ?? FocusNode();
+    widget.controller.text = widget.initialText ?? '';
+    if(widget.initialText != null && widget.filePath != null) {
+      throw Exception('Initial text and file path cannot be both provided. Please provide either initialText or filePath.');
+    }
+    if(widget.lspConfig != null){
+      if((widget.lspConfig!.filePath != widget.filePath) || widget.filePath == null){ 
+        throw Exception('File path in LspConfig does not match the provided filePath in CodeCrafter.');
+      }
+      (() async{
+        try {
+          if(widget.lspConfig is LspSocketConfig){
+            await (widget.lspConfig as LspSocketConfig).connect();  
+          }
+          await widget.lspConfig!.initialize();
+          await widget.lspConfig!.openDocument();
+          final content = await File(widget.lspConfig!.filePath).readAsString();
+          widget.controller.value = TextEditingValue(
+            text: content,
+            selection: TextSelection.collapsed(offset: content.length)
+          );
+        } catch (e) {
+          widget.controller.text = '';
+        }
+      })();
+    }
     _value = widget.controller.text;
     _cursorPostion = widget.controller.selection.baseOffset;
+
     Shared().theme = widget.editorTheme ?? {};
     Shared().textStyle = widget.textStyle;
-    Shared().aiOverlayStyle = widget.aiOverlayStyle;
+    Shared().aiOverlayStyle = widget.aiCompletionTextStyle;
     Shared().controller = widget.controller;
     Shared().tabSize = widget.tabSize;
     widget.controller.addListener(() {
+      if(widget.lspConfig != null) {
+        (() async{
+          await widget.lspConfig!.updateDocument(widget.controller.text);
+          final text = widget.controller.text;
+          final cursorOffset = widget.controller.selection.baseOffset;
+          final lines = text.substring(0, cursorOffset).split('\n');
+          final line = lines.length - 1;
+          final character = lines.isNotEmpty ? lines.last.length : 0;
+          final data = await widget.lspConfig!.getCompletions(line, character);
+          print(data);
+        })();
+      }
+
       if(gutterWidth != Shared().gutterWidth) {
         setState(() => gutterWidth = Shared().gutterWidth);
       }
