@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'dart:io';
+import 'package:flutter/rendering.dart';
+
 import '../LSP/lsp.dart';
 import '../utils/utils.dart';
 import '../utils/shared.dart';
@@ -59,6 +61,9 @@ class _CodeCrafterState extends State<CodeCrafter> {
   Timer? _debounceTimer;
   String _value = '';
   int _cursorPostion = 0;
+  OverlayEntry? _suggestionOverlay;
+  List<String> _suggestions = [];
+  bool _recentlyTyped = false;
 
   @override
   void initState() {
@@ -79,7 +84,7 @@ class _CodeCrafterState extends State<CodeCrafter> {
           }
           await widget.lspConfig!.initialize();
           await widget.lspConfig!.openDocument();
-          final content = await File(widget.lspConfig!.filePath).readAsString();
+          final content = await File(widget.filePath!).readAsString();
           widget.controller.value = TextEditingValue(
             text: content,
             selection: TextSelection.collapsed(offset: content.length)
@@ -97,17 +102,30 @@ class _CodeCrafterState extends State<CodeCrafter> {
     Shared().aiOverlayStyle = widget.aiCompletionTextStyle;
     Shared().controller = widget.controller;
     Shared().tabSize = widget.tabSize;
+    String oldVal = '';
     widget.controller.addListener(() {
       if(widget.lspConfig != null) {
         (() async{
           await widget.lspConfig!.updateDocument(widget.controller.text);
-          final text = widget.controller.text;
+          final currentText = widget.controller.text;
           final cursorOffset = widget.controller.selection.baseOffset;
-          final lines = text.substring(0, cursorOffset).split('\n');
+          final lines = currentText.substring(0, cursorOffset).split('\n');
           final line = lines.length - 1;
           final character = lines.isNotEmpty ? lines.last.length : 0;
-          final data = await widget.lspConfig!.getCompletions(line, character);
-          print(data);
+          final suggestion = await widget.lspConfig!.getCompletions(line, character);
+          _recentlyTyped = currentText.length > oldVal.length;
+          oldVal = currentText;
+          if (_recentlyTyped && suggestion.isNotEmpty && cursorOffset > 0) {
+            _suggestions = suggestion;
+            final triggerChar = currentText[cursorOffset - 1];
+            if([' ', '\n', ')', ']', '}', ';', ':', ''].contains(triggerChar)) {
+              _hideSuggestionOverlay();
+              return;
+            }
+            if(mounted) _showSuggestionOverlay();
+          } else {
+            _hideSuggestionOverlay();
+          }
         })();
       }
 
@@ -158,6 +176,129 @@ class _CodeCrafterState extends State<CodeCrafter> {
     super.dispose();
   }
 
+  void _insertSuggestion(String suggestion) {
+    final text = widget.controller.text;
+    final cursorOffset = widget.controller.selection.baseOffset;
+    final newText = text.replaceRange(cursorOffset, cursorOffset, suggestion);
+
+    widget.controller.value = TextEditingValue(
+      text: newText,
+      selection: TextSelection.collapsed(offset: cursorOffset + suggestion.length),
+    );
+  }
+
+  void _hideSuggestionOverlay() {
+    _suggestionOverlay?.remove();
+    _suggestionOverlay = null;
+  }
+
+  RenderEditable? _findRenderEditable(BuildContext root) {
+    RenderEditable? result;
+    void visitor(Element element) {
+      if (result != null) return;
+      final ro = element.renderObject;
+      if (ro is RenderEditable) {
+        result = ro;
+        return;
+      }
+      element.visitChildElements(visitor);
+    }
+
+    root.visitChildElements(visitor);
+    return result;
+  }
+
+
+  Rect _globalCaretRect() {
+    final ctx = _codeFocus.context;
+    if (ctx == null) return Rect.zero;
+
+    final renderEditable = _findRenderEditable(ctx);
+    if (renderEditable == null) {
+      return Rect.zero;
+    }
+
+    final caret = renderEditable.getLocalRectForCaret(
+      TextPosition(offset: widget.controller.selection.baseOffset),
+    );
+
+    final globalTopLeft = renderEditable.localToGlobal(caret.topLeft);
+    final rect = Rect.fromLTWH(
+      globalTopLeft.dx,
+      globalTopLeft.dy,
+      caret.width,
+      caret.height,
+    );
+    return rect;
+  }
+
+
+  void _showSuggestionOverlay() {
+    _suggestionOverlay?.remove();
+
+    final overlay = Overlay.of(context);
+    final caretGlobal = _globalCaretRect();
+    const overlayWidth = 250.0;
+    const overlayHeight = 300.0;
+    final screenHeight = MediaQuery.of(context).size.height;
+    const gap = 4;
+    final bool showAbove = caretGlobal.bottom + gap + overlayHeight > screenHeight;
+
+    final double top = showAbove
+        ? caretGlobal.top - gap - overlayHeight
+        : caretGlobal.bottom + gap;
+
+    final double left = caretGlobal.left;
+
+    _suggestionOverlay = OverlayEntry(
+      builder: (ctx) => Positioned(
+        left: left,
+        top:  top,
+        width: overlayWidth,
+        height: overlayHeight,
+        child: Material(
+          elevation: 6,
+          color: Colors.transparent,
+          child: Card(
+            color: Shared().theme['root']?.backgroundColor?.withAlpha(220),
+            shape: BeveledRectangleBorder(
+              side: BorderSide(
+                color: Shared().theme['root']?.color ?? Colors.white,
+                width: 0.5,
+              ),
+            ),
+            child: ListView.builder(
+              itemCount: _suggestions.length,
+              itemBuilder: (_, i) => InkWell(
+                hoverColor: Colors.blueAccent.withAlpha(50),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 3),
+                  child: Row(
+                    children: [
+                      Text(
+                        _suggestions[i],
+                        style: TextStyle(
+                          color: Shared().theme['root']?.color ?? Colors.white,
+                          fontSize: (widget.textStyle?.fontSize ?? 14) - 2,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                onTap: () {
+                  _insertSuggestion(_suggestions[i]);
+                  _hideSuggestionOverlay();
+                },
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    overlay.insert(_suggestionOverlay!);
+  }
+
   Future<String> _getCachedRsponse(String codeToSend) async{
     final String key = codeToSend.hashCode.toString();
     if(cachedResponse.containsKey(key)){
@@ -201,6 +342,10 @@ class _CodeCrafterState extends State<CodeCrafter> {
                         focusNode: _keyboardFocus,
                         onKeyEvent: (value){
                           if(value is KeyDownEvent){
+                            if(value.logicalKey == LogicalKeyboardKey.escape){
+                              _hideSuggestionOverlay();
+                              return;
+                            }
                             if(value.logicalKey == LogicalKeyboardKey.tab){
                               int cursorPosition = widget.controller.selection.baseOffset;
                               String currText = widget.controller.text;
