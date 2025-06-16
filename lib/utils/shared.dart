@@ -13,6 +13,5 @@ class Shared {
   TextStyle? textStyle, aiOverlayStyle;
   int tabSize = 0;
   CodeCrafterController controller = CodeCrafterController();
-  BoxConstraints constraints = BoxConstraints();
   ValueNotifier<List<LineState>> lineStates = ValueNotifier([]);
 }

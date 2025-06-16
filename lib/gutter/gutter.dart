@@ -48,7 +48,7 @@ class _GutterState extends State<Gutter> {
             return LineState(lineNumber: index + 1);
           }
         });
-
+        
         setState(() {
           lineNumber = _textPainter.computeLineMetrics().length;
           _lineStates.value =  updatedStates;
@@ -68,6 +68,12 @@ class _GutterState extends State<Gutter> {
       Shared().gutterWidth = _gutterWidth ?? 65;
     });
     super.initState();
+  }
+
+  @override
+  void dispose() {
+    _lineStates.dispose();
+    super.dispose();
   }
 
   @override

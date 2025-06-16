@@ -55,7 +55,7 @@ class CodeCrafter extends StatefulWidget {
 }
 
 class _CodeCrafterState extends State<CodeCrafter> {
-  late final FocusNode _keyboardFocus, _codeFocus;
+  late final FocusNode _keyboardFocus, _codeFocus, _suggestionFocus;
   double gutterWidth = Shared().gutterWidth;
   Map<String, String> cachedResponse = {};
   Timer? _debounceTimer;
@@ -63,11 +63,14 @@ class _CodeCrafterState extends State<CodeCrafter> {
   int _cursorPostion = 0;
   OverlayEntry? _suggestionOverlay;
   List<String> _suggestions = [];
-  bool _recentlyTyped = false;
+  bool _recentlyTyped = false, _suggestionShown = false;
+  int _selectedSuggestionIndex = 0;
+
 
   @override
   void initState() {
     _keyboardFocus = FocusNode();
+    _suggestionFocus = FocusNode();
     _codeFocus = widget.focusNode ?? FocusNode();
     widget.controller.text = widget.initialText ?? '';
     if(widget.initialText != null && widget.filePath != null) {
@@ -104,19 +107,21 @@ class _CodeCrafterState extends State<CodeCrafter> {
     Shared().tabSize = widget.tabSize;
     String oldVal = '';
     widget.controller.addListener(() {
-      if(widget.lspConfig != null) {
+      if(widget.lspConfig != null && widget.controller.selection.baseOffset > 0) {
         (() async{
           await widget.lspConfig!.updateDocument(widget.controller.text);
           final currentText = widget.controller.text;
           final cursorOffset = widget.controller.selection.baseOffset;
           final lines = currentText.substring(0, cursorOffset).split('\n');
           final line = lines.length - 1;
+          final prefix = _getCurrentWordPrefix(currentText,  cursorOffset);
           final character = lines.isNotEmpty ? lines.last.length : 0;
           final suggestion = await widget.lspConfig!.getCompletions(line, character);
           _recentlyTyped = currentText.length > oldVal.length;
           oldVal = currentText;
           if (_recentlyTyped && suggestion.isNotEmpty && cursorOffset > 0) {
             _suggestions = suggestion;
+            _sortSuggestions(prefix);
             final triggerChar = currentText[cursorOffset - 1];
             if([' ', '\n', ')', ']', '}', ';', ':', ''].contains(triggerChar)) {
               _hideSuggestionOverlay();
@@ -170,24 +175,54 @@ class _CodeCrafterState extends State<CodeCrafter> {
 
   @override
   void dispose() {
-    widget.controller.dispose();
     _keyboardFocus.dispose();
     _debounceTimer?.cancel();
     super.dispose();
   }
 
+  String _getCurrentWordPrefix(String text, int offset) {
+    final beforeCursor = text.substring(0, offset);
+    final match = RegExp(r'([a-zA-Z_][a-zA-Z0-9_]*)$').firstMatch(beforeCursor);
+    return match?.group(0) ?? '';
+  }
+
+  void _sortSuggestions(String prefix) {
+    _suggestions.sort((a, b) {
+      final aStartsWith = a.toLowerCase().startsWith(prefix.toLowerCase());
+      final bStartsWith = b.toLowerCase().startsWith(prefix.toLowerCase());
+
+      if (aStartsWith && !bStartsWith) return -1;
+      if (!aStartsWith && bStartsWith) return 1;
+
+      return b.compareTo(a);
+    });
+  }
+
   void _insertSuggestion(String suggestion) {
     final text = widget.controller.text;
-    final cursorOffset = widget.controller.selection.baseOffset;
-    final newText = text.replaceRange(cursorOffset, cursorOffset, suggestion);
-
+    final cursorPos = widget.controller.selection.baseOffset;
+    int start = cursorPos - 1;
+    while (start >= 0 && !_isWordBoundary(text[start])) {
+      start--;
+    }
+    start++;
+    final newText = text.replaceRange(start, cursorPos, suggestion);
     widget.controller.value = TextEditingValue(
       text: newText,
-      selection: TextSelection.collapsed(offset: cursorOffset + suggestion.length),
+      selection: TextSelection.collapsed(offset: start + suggestion.length),
     );
   }
 
+  bool _isWordBoundary(String char) {
+    return char == ' ' || char == '\n' || char == '\t' || char == '(' || 
+          char == ')' || char == '{' || char == '}' || char == ';' || 
+          char == ',' || char == '.' || char == '"' || char == '\'';
+  }
+
+
   void _hideSuggestionOverlay() {
+    _suggestionShown = false;
+    _suggestionFocus.unfocus();
     _suggestionOverlay?.remove();
     _suggestionOverlay = null;
   }
@@ -213,16 +248,16 @@ class _CodeCrafterState extends State<CodeCrafter> {
     final ctx = _codeFocus.context;
     if (ctx == null) return Rect.zero;
 
-    final renderEditable = _findRenderEditable(ctx);
+    final RenderEditable? renderEditable = _findRenderEditable(ctx);
     if (renderEditable == null) {
       return Rect.zero;
     }
 
-    final caret = renderEditable.getLocalRectForCaret(
+    final Rect caret = renderEditable.getLocalRectForCaret(
       TextPosition(offset: widget.controller.selection.baseOffset),
     );
 
-    final globalTopLeft = renderEditable.localToGlobal(caret.topLeft);
+    final Offset globalTopLeft = renderEditable.localToGlobal(caret.topLeft);
     final rect = Rect.fromLTWH(
       globalTopLeft.dx,
       globalTopLeft.dy,
@@ -232,62 +267,79 @@ class _CodeCrafterState extends State<CodeCrafter> {
     return rect;
   }
 
-
   void _showSuggestionOverlay() {
     _suggestionOverlay?.remove();
-
-    final overlay = Overlay.of(context);
-    final caretGlobal = _globalCaretRect();
-    const overlayWidth = 250.0;
-    const overlayHeight = 300.0;
-    final screenHeight = MediaQuery.of(context).size.height;
-    const gap = 4;
-    final bool showAbove = caretGlobal.bottom + gap + overlayHeight > screenHeight;
+    _suggestionShown = true;
+    final OverlayState overlay = Overlay.of(context);
+    final Rect caretGlobal = _globalCaretRect();
+    final double screenHeight = MediaQuery.of(context).size.height;
+    final double screenWidth = MediaQuery.of(context).size.width;
+    const double overlayWidth = 250.0, maxOverlayHeight = 300.0;
+    const int gap = 4;
+    final bool showAbove = caretGlobal.bottom + gap + maxOverlayHeight > screenHeight;
+    final bool showLeft = caretGlobal.left + overlayWidth > screenWidth;
 
     final double top = showAbove
-        ? caretGlobal.top - gap - overlayHeight
-        : caretGlobal.bottom + gap;
+      ? caretGlobal.top - gap - maxOverlayHeight
+      : caretGlobal.bottom + gap;
 
-    final double left = caretGlobal.left;
+    final double left = showLeft
+      ? caretGlobal.left - overlayWidth + caretGlobal.width
+      : caretGlobal.left;
 
     _suggestionOverlay = OverlayEntry(
       builder: (ctx) => Positioned(
         left: left,
         top:  top,
         width: overlayWidth,
-        height: overlayHeight,
-        child: Material(
-          elevation: 6,
-          color: Colors.transparent,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxHeight: maxOverlayHeight,
+          ),
           child: Card(
-            color: Shared().theme['root']?.backgroundColor?.withAlpha(220),
+            elevation: 6,
+            color: Shared().theme['root']?.backgroundColor?.withAlpha(220)  ?? Colors.black87,
             shape: BeveledRectangleBorder(
               side: BorderSide(
                 color: Shared().theme['root']?.color ?? Colors.white,
-                width: 0.5,
+                width: 0.2,
               ),
             ),
-            child: ListView.builder(
-              itemCount: _suggestions.length,
-              itemBuilder: (_, i) => InkWell(
-                hoverColor: Colors.blueAccent.withAlpha(50),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 3),
-                  child: Row(
-                    children: [
-                      Text(
-                        _suggestions[i],
-                        style: TextStyle(
-                          color: Shared().theme['root']?.color ?? Colors.white,
-                          fontSize: (widget.textStyle?.fontSize ?? 14) - 2,
+            child: Focus(
+              focusNode: _suggestionFocus,
+              child: ListView.builder(
+                itemExtent: (widget.textStyle?.fontSize ?? 14) + 5,
+                shrinkWrap: true,
+                itemCount: _suggestions.length,
+                itemBuilder: (_, i) {
+                  return InkWell(
+                    focusColor: Colors.blueAccent.withAlpha(50),
+                    hoverColor: Colors.grey.withAlpha(15),
+                    splashColor:  Colors.blueAccent.withAlpha(50),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 3),
+                      child: Container(
+                        color: _selectedSuggestionIndex == i
+                          ? Colors.blueAccent.withAlpha(50)
+                          : Colors.transparent,
+                        child: Row(
+                          children: [
+                            Text(
+                              _suggestions[i],
+                              style: TextStyle(
+                                color: Shared().theme['root']?.color ?? Colors.white,
+                                fontSize: (widget.textStyle?.fontSize ?? 14) - 2,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                    ],
-                  ),
-                ),
-                onTap: () {
-                  _insertSuggestion(_suggestions[i]);
-                  _hideSuggestionOverlay();
+                    ),
+                    onTap: () {
+                      _insertSuggestion(_suggestions[i]);
+                      _hideSuggestionOverlay();
+                    },
+                  );
                 },
               ),
             ),
@@ -313,7 +365,6 @@ class _CodeCrafterState extends State<CodeCrafter> {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        Shared().constraints = constraints;
         return SizedBox(
           height: constraints.maxHeight,
           width: constraints.maxWidth,
@@ -342,10 +393,26 @@ class _CodeCrafterState extends State<CodeCrafter> {
                         focusNode: _keyboardFocus,
                         onKeyEvent: (value){
                           if(value is KeyDownEvent){
+
                             if(value.logicalKey == LogicalKeyboardKey.escape){
-                              _hideSuggestionOverlay();
-                              return;
+                              if(_suggestionShown){
+                                _hideSuggestionOverlay();
+                                _codeFocus.requestFocus();
+                              }
                             }
+
+                            if(value.logicalKey == LogicalKeyboardKey.arrowUp){
+                              if(_suggestionShown){
+                                _suggestionFocus.requestFocus();
+                              }
+                            }
+
+                            if(value.logicalKey == LogicalKeyboardKey.arrowDown){
+                              if(_suggestionShown){
+                                _suggestionFocus.requestFocus();
+                              }
+                            }
+
                             if(value.logicalKey == LogicalKeyboardKey.tab){
                               int cursorPosition = widget.controller.selection.baseOffset;
                               String currText = widget.controller.text;
