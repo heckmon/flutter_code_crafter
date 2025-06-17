@@ -112,7 +112,7 @@ class CodeCrafterController extends TextEditingController{
         baseStyle = baseStyle.merge(textStyle);
       }
       
-      if(Shared().aiResponse != null && newText.isNotEmpty){
+      if(Shared().aiResponse != null && newText.isNotEmpty && Shared().aiResponse!.isNotEmpty){
         final int cursorPosition = selection.baseOffset;
         final String textBeforeCursor = newText.substring(0, cursorPosition);
         final String textAfterCursor = newText.substring(cursorPosition);

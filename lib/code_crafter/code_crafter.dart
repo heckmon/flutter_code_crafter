@@ -1,7 +1,5 @@
-import 'dart:async';
 import 'dart:io';
-import 'package:flutter/rendering.dart';
-
+import 'dart:async';
 import '../LSP/lsp.dart';
 import '../utils/utils.dart';
 import '../utils/shared.dart';
@@ -9,6 +7,7 @@ import '../gutter/gutter.dart';
 import '../AI_completion/ai.dart';
 import '../gutter/gutter_style.dart';
 import './code_crafter_controller.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -60,11 +59,11 @@ class _CodeCrafterState extends State<CodeCrafter> {
   Map<String, String> cachedResponse = {};
   Timer? _debounceTimer;
   String _value = '';
-  int _cursorPostion = 0;
+  int _cursorPostion = 0, _selected = 0;
   OverlayEntry? _suggestionOverlay;
   List<String> _suggestions = [];
   bool _recentlyTyped = false, _suggestionShown = false;
-  int _selectedSuggestionIndex = 0;
+  Rect _caretRect = Rect.zero;
 
 
   @override
@@ -121,6 +120,7 @@ class _CodeCrafterState extends State<CodeCrafter> {
           oldVal = currentText;
           if (_recentlyTyped && suggestion.isNotEmpty && cursorOffset > 0) {
             _suggestions = suggestion;
+            _selected = 0;
             _sortSuggestions(prefix);
             final triggerChar = currentText[cursorOffset - 1];
             if([' ', '\n', ')', ']', '}', ';', ':', ''].contains(triggerChar)) {
@@ -153,6 +153,7 @@ class _CodeCrafterState extends State<CodeCrafter> {
             Shared().aiResponse = await _getCachedRsponse(codeToSend);
             setState(() {});
           }
+
         );
         _value = widget.controller.text;
       }
@@ -306,38 +307,36 @@ class _CodeCrafterState extends State<CodeCrafter> {
               ),
             ),
             child: Focus(
-              focusNode: _suggestionFocus,
               child: ListView.builder(
                 itemExtent: (widget.textStyle?.fontSize ?? 14) + 5,
                 shrinkWrap: true,
                 itemCount: _suggestions.length,
                 itemBuilder: (_, i) {
                   return InkWell(
+                    autofocus: true,
+                    focusNode: _selected == i ? _suggestionFocus : null,
                     focusColor: Colors.blueAccent.withAlpha(50),
                     hoverColor: Colors.grey.withAlpha(15),
                     splashColor:  Colors.blueAccent.withAlpha(50),
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 3),
-                      child: Container(
-                        color: _selectedSuggestionIndex == i
-                          ? Colors.blueAccent.withAlpha(50)
-                          : Colors.transparent,
-                        child: Row(
-                          children: [
-                            Text(
-                              _suggestions[i],
-                              style: TextStyle(
-                                color: Shared().theme['root']?.color ?? Colors.white,
-                                fontSize: (widget.textStyle?.fontSize ?? 14) - 2,
-                              ),
+                      child: Row(
+                        children: [
+                          Text(
+                            _suggestions[i],
+                            style: TextStyle(
+                              color: Shared().theme['root']?.color ?? Colors.white,
+                              fontSize: (widget.textStyle?.fontSize ?? 14) - 2,
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
                     ),
                     onTap: () {
                       _insertSuggestion(_suggestions[i]);
+                      _selected = i;
                       _hideSuggestionOverlay();
+                      _codeFocus.requestFocus();
                     },
                   );
                 },
@@ -365,6 +364,10 @@ class _CodeCrafterState extends State<CodeCrafter> {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
+         WidgetsBinding.instance.addPostFrameCallback((_) {
+          final rect = _globalCaretRect();
+          if (rect != _caretRect) setState(() => _caretRect = rect);
+        });
         return SizedBox(
           height: constraints.maxHeight,
           width: constraints.maxWidth,
@@ -470,6 +473,56 @@ class _CodeCrafterState extends State<CodeCrafter> {
                   ],
                 ),
               ),
+              if(widget.aiCompletion != null && widget.aiCompletion!.enableCompletion && Shared().aiResponse != null && Shared().aiResponse!.isNotEmpty)
+                Positioned(
+                  left: _caretRect.left,
+                  right: _caretRect.right,
+                  top: _caretRect.top + _caretRect.height + (Shared().aiResponse!.split('\n').length * (widget.textStyle?.fontSize ?? 14)),
+                  child: Row(
+                    children: [
+                      SizedBox(
+                        width: 55,
+                        height: _caretRect.height,
+                        child: TextButton(
+                          style: ButtonStyle(
+                            shape: WidgetStatePropertyAll(RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(3),
+                              side: BorderSide(color: Colors.white, width: 0.2),
+                            )),
+                            backgroundColor: WidgetStatePropertyAll(Colors.blueAccent),
+                            foregroundColor: WidgetStatePropertyAll(Colors.white),
+                          ),
+                          onPressed: (){
+                            _insertSuggestion(Shared().aiResponse!);
+                            Future.delayed(Duration.zero);
+                            Shared().aiResponse = null;
+                            setState(() {});
+                          }, 
+                          child: const Text("Accept",style: TextStyle(fontSize: 9))
+                        ),
+                      ),
+                      const SizedBox(width: 5),
+                      SizedBox(
+                        width: 55,
+                        height: _caretRect.height,
+                        child: TextButton(
+                          style: ButtonStyle(
+                            shape: WidgetStatePropertyAll(RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(3),
+                              side: BorderSide(color: Colors.white, width: 0.2),
+                            )),
+                            backgroundColor: WidgetStatePropertyAll(Colors.blueAccent),
+                            foregroundColor: WidgetStatePropertyAll(Colors.white),
+                          ),
+                          onPressed: () {
+                            Shared().aiResponse = null;
+                            setState(() {});
+                          },
+                          child: const Text("Reject", style: TextStyle(fontSize: 9))),
+                      ),
+                    ],
+                  )
+                ),
             ],
           ),
         );

@@ -18,6 +18,7 @@ class Gutter extends StatefulWidget {
 class _GutterState extends State<Gutter> {
   final CodeCrafterController _controller = Shared().controller;
   late ValueNotifier<List<LineState>> _lineStates;
+  late final void Function() _listenerFunction;
   TextPainter _textPainter = TextPainter();
   int lineNumber = 0;
   double? _gutterWidth;
@@ -32,7 +33,8 @@ class _GutterState extends State<Gutter> {
     lineNumber = lineMetrics.computeLineMetrics().length;
 
     _lineStates = ValueNotifier(List.generate(lineNumber, (index) => LineState(lineNumber: index + 1)));
-    _controller.addListener((){
+
+     _listenerFunction = (){
       _textPainter = TextPainter(
         textDirection: TextDirection.ltr,
         text: TextSpan(
@@ -65,13 +67,16 @@ class _GutterState extends State<Gutter> {
         )
       )..layout();
       _gutterWidth = widget.gutterStyle.gutterWidth ?? gutterPainter.width * 2.1;
-      Shared().gutterWidth = _gutterWidth ?? 65;
-    });
+      Shared().gutterWidth = _gutterWidth ?? 65;  
+    };  
+
+    _controller.addListener(_listenerFunction);
     super.initState();
   }
 
   @override
   void dispose() {
+    _controller.removeListener(_listenerFunction);
     _lineStates.dispose();
     super.dispose();
   }

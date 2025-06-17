@@ -279,7 +279,7 @@ class LspStdioConfig extends LspConfig {
   }
 
   int _findHeaderEnd() {
-    final endSequence = [13, 10, 13, 10]; // \r\n\r\n
+    final endSequence = [13, 10, 13, 10];
     for (var i = 0; i <= _buffer.length - endSequence.length; i++) {
       if (List.generate(endSequence.length, (j) => _buffer[i + j]).every((byte) => endSequence.contains(byte))) {
         return i;
