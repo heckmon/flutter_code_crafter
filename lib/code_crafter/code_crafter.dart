@@ -65,8 +65,6 @@ class _CodeCrafterState extends State<CodeCrafter> {
   bool _recentlyTyped = false, _suggestionShown = false;
   Rect _caretRect = Rect.zero;
   String? content;
-  
-
 
   @override
   void initState() {
@@ -112,7 +110,8 @@ class _CodeCrafterState extends State<CodeCrafter> {
     _value = widget.controller.text;
     widget.controller.addListener(() {
       if(widget.lspConfig == null){
-        List<String> words = widget.controller.text.split('\n');
+        final RegExp regExp = RegExp(r'\b\w+\b');
+        final List<String> words = regExp.allMatches(text).map((m) => m.group(0)!).toList();
         _suggestions.addAll(words);
       }
     _cursorPosition = widget.controller.selection.baseOffset;
@@ -200,13 +199,17 @@ class _CodeCrafterState extends State<CodeCrafter> {
 
   void _sortSuggestions(String prefix) {
     _suggestions.sort((a, b) {
-      final aStartsWith = a.label.toLowerCase().startsWith(prefix.toLowerCase());
-      final bStartsWith = b.label.toLowerCase().startsWith(prefix.toLowerCase());
-
+      final aStartsWith = a is LspCompletion ? 
+          a.label.toLowerCase().startsWith(prefix.toLowerCase())
+          : a.toLowerCase().startsWith(prefix.toLowerCase());
+      final bStartsWith = b is LspCompletion ? 
+          b.label.toLowerCase().startsWith(prefix.toLowerCase())
+          : b.toLowerCase().startsWith(prefix.toLowerCase());
       if (aStartsWith && !bStartsWith) return -1;
       if (!aStartsWith && bStartsWith) return 1;
 
-      return b.label.compareTo(a.label);
+      a is LspCompletion ? return b.label.compareTo(a.label)
+      : return b.compareTo(a);
     });
   }
 
@@ -332,7 +335,7 @@ class _CodeCrafterState extends State<CodeCrafter> {
                       padding: const EdgeInsets.symmetric(horizontal: 3),
                       child: Row(
                         children: [
-                          _suggestions[i].icon,
+                          _suggestions[i] is LspCompletion ? _suggestions[i].icon  const SizedBox(),
                           const SizedBox(width: 6),
                           Text(
                             _suggestions[i].label,
@@ -345,7 +348,7 @@ class _CodeCrafterState extends State<CodeCrafter> {
                       ),
                     ),
                     onTap: () {
-                      _insertSuggestion(_suggestions[i].label);
+                      _insertSuggestion(_suggestions[i] is LspCompletion ? _suggestions[i].label : _suggestions[i]);
                       _selected = i;
                       _hideSuggestionOverlay();
                       _codeFocus.requestFocus();
@@ -371,7 +374,7 @@ class _CodeCrafterState extends State<CodeCrafter> {
     cachedResponse[key] = aiResponse;
     return aiResponse;
   }
-  
+
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
