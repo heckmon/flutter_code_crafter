@@ -50,7 +50,7 @@ sealed class Models{
 
 }
 
-abstract class OpenAiCompatible extends Models{
+sealed class OpenAiCompatible extends Models{
   String get baseUrl;
   @protected @override String get url => "$baseUrl/chat/completions";
 

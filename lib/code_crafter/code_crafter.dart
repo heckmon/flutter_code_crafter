@@ -59,11 +59,13 @@ class _CodeCrafterState extends State<CodeCrafter> {
   Map<String, String> cachedResponse = {};
   Timer? _debounceTimer;
   String _value = '';
-  int _cursorPostion = 0, _selected = 0;
+  int _cursorPosition = 0, _selected = 0;
   OverlayEntry? _suggestionOverlay;
   List<String> _suggestions = [];
   bool _recentlyTyped = false, _suggestionShown = false;
   Rect _caretRect = Rect.zero;
+  String? content;
+  
 
 
   @override
@@ -72,6 +74,15 @@ class _CodeCrafterState extends State<CodeCrafter> {
     _suggestionFocus = FocusNode();
     _codeFocus = widget.focusNode ?? FocusNode();
     widget.controller.text = widget.initialText ?? '';
+    if(widget.filePath != null) {
+      (() async {
+         content = await File(widget.filePath!).readAsString();
+         widget.controller.value = TextEditingValue(
+            text: content ?? '',
+            selection: TextSelection.collapsed(offset: content?.length ?? 0)
+          );
+      })();
+    }
     if(widget.initialText != null && widget.filePath != null) {
       throw Exception('Initial text and file path cannot be both provided. Please provide either initialText or filePath.');
     }
@@ -86,18 +97,11 @@ class _CodeCrafterState extends State<CodeCrafter> {
           }
           await widget.lspConfig!.initialize();
           await widget.lspConfig!.openDocument();
-          final content = await File(widget.filePath!).readAsString();
-          widget.controller.value = TextEditingValue(
-            text: content,
-            selection: TextSelection.collapsed(offset: content.length)
-          );
         } catch (e) {
           widget.controller.text = '';
         }
       })();
     }
-    _value = widget.controller.text;
-    _cursorPostion = widget.controller.selection.baseOffset;
 
     Shared().theme = widget.editorTheme ?? {};
     Shared().textStyle = widget.textStyle;
@@ -105,7 +109,9 @@ class _CodeCrafterState extends State<CodeCrafter> {
     Shared().controller = widget.controller;
     Shared().tabSize = widget.tabSize;
     String oldVal = '';
+    _value = widget.controller.text;
     widget.controller.addListener(() {
+    _cursorPosition = widget.controller.selection.baseOffset;
       if(widget.lspConfig != null && widget.controller.selection.baseOffset > 0) {
         (() async{
           await widget.lspConfig!.updateDocument(widget.controller.text);
@@ -123,7 +129,7 @@ class _CodeCrafterState extends State<CodeCrafter> {
             _selected = 0;
             _sortSuggestions(prefix);
             final triggerChar = currentText[cursorOffset - 1];
-            if([' ', '\n', ')', ']', '}', ';', ':', ''].contains(triggerChar)) {
+            if([' ', '\n', '(' ,')', '[', ']', '{', '}', ';', ':', ''].contains(triggerChar)) {
               _hideSuggestionOverlay();
               return;
             }
@@ -137,7 +143,7 @@ class _CodeCrafterState extends State<CodeCrafter> {
       if(gutterWidth != Shared().gutterWidth) {
         setState(() => gutterWidth = Shared().gutterWidth);
       }
-      if(_value == widget.controller.text && _cursorPostion != widget.controller.selection.baseOffset){
+      if(_value == widget.controller.text && _cursorPosition != widget.controller.selection.baseOffset){
         Shared().aiResponse = null;
       }
       if(_value != widget.controller.text && (widget.aiCompletion?.enableCompletion ?? false)){
@@ -157,6 +163,7 @@ class _CodeCrafterState extends State<CodeCrafter> {
         );
         _value = widget.controller.text;
       }
+
     });
     super.initState();
   }
@@ -219,7 +226,6 @@ class _CodeCrafterState extends State<CodeCrafter> {
           char == ')' || char == '{' || char == '}' || char == ';' || 
           char == ',' || char == '.' || char == '"' || char == '\'';
   }
-
 
   void _hideSuggestionOverlay() {
     _suggestionShown = false;
@@ -399,6 +405,7 @@ class _CodeCrafterState extends State<CodeCrafter> {
 
                             if(value.logicalKey == LogicalKeyboardKey.escape){
                               if(_suggestionShown){
+                                _suggestionFocus.unfocus();
                                 _hideSuggestionOverlay();
                                 _codeFocus.requestFocus();
                               }
@@ -493,10 +500,11 @@ class _CodeCrafterState extends State<CodeCrafter> {
                             foregroundColor: WidgetStatePropertyAll(Colors.white),
                           ),
                           onPressed: (){
-                            _insertSuggestion(Shared().aiResponse!);
-                            Future.delayed(Duration.zero);
-                            Shared().aiResponse = null;
-                            setState(() {});
+                            setState(() {
+                              _insertSuggestion(Shared().aiResponse!);
+                              Future.delayed(Duration.zero);
+                              Shared().aiResponse = null;
+                            });
                           }, 
                           child: const Text("Accept",style: TextStyle(fontSize: 9))
                         ),
@@ -514,10 +522,7 @@ class _CodeCrafterState extends State<CodeCrafter> {
                             backgroundColor: WidgetStatePropertyAll(Colors.blueAccent),
                             foregroundColor: WidgetStatePropertyAll(Colors.white),
                           ),
-                          onPressed: () {
-                            Shared().aiResponse = null;
-                            setState(() {});
-                          },
+                          onPressed: () => setState(() => Shared().aiResponse = null),
                           child: const Text("Reject", style: TextStyle(fontSize: 9))),
                       ),
                     ],
