@@ -61,7 +61,7 @@ class _CodeCrafterState extends State<CodeCrafter> {
   String _value = '';
   int _cursorPosition = 0, _selected = 0;
   OverlayEntry? _suggestionOverlay;
-  List<String> _suggestions = [];
+  List<dynamic> _suggestions = [];
   bool _recentlyTyped = false, _suggestionShown = false;
   Rect _caretRect = Rect.zero;
   String? content;
@@ -111,6 +111,10 @@ class _CodeCrafterState extends State<CodeCrafter> {
     String oldVal = '';
     _value = widget.controller.text;
     widget.controller.addListener(() {
+      if(widget.lspConfig == null){
+        List<String> words = widget.controller.text.split('\n');
+        _suggestions.addAll(words);
+      }
     _cursorPosition = widget.controller.selection.baseOffset;
       if(widget.lspConfig != null && widget.controller.selection.baseOffset > 0) {
         (() async{
@@ -196,13 +200,13 @@ class _CodeCrafterState extends State<CodeCrafter> {
 
   void _sortSuggestions(String prefix) {
     _suggestions.sort((a, b) {
-      final aStartsWith = a.toLowerCase().startsWith(prefix.toLowerCase());
-      final bStartsWith = b.toLowerCase().startsWith(prefix.toLowerCase());
+      final aStartsWith = a.label.toLowerCase().startsWith(prefix.toLowerCase());
+      final bStartsWith = b.label.toLowerCase().startsWith(prefix.toLowerCase());
 
       if (aStartsWith && !bStartsWith) return -1;
       if (!aStartsWith && bStartsWith) return 1;
 
-      return b.compareTo(a);
+      return b.label.compareTo(a.label);
     });
   }
 
@@ -328,8 +332,10 @@ class _CodeCrafterState extends State<CodeCrafter> {
                       padding: const EdgeInsets.symmetric(horizontal: 3),
                       child: Row(
                         children: [
+                          _suggestions[i].icon,
+                          const SizedBox(width: 6),
                           Text(
-                            _suggestions[i],
+                            _suggestions[i].label,
                             style: TextStyle(
                               color: Shared().theme['root']?.color ?? Colors.white,
                               fontSize: (widget.textStyle?.fontSize ?? 14) - 2,
@@ -339,7 +345,7 @@ class _CodeCrafterState extends State<CodeCrafter> {
                       ),
                     ),
                     onTap: () {
-                      _insertSuggestion(_suggestions[i]);
+                      _insertSuggestion(_suggestions[i].label);
                       _selected = i;
                       _hideSuggestionOverlay();
                       _codeFocus.requestFocus();

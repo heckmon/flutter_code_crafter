@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import '../utils/utils.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
 part 'lsp_socket.dart';
@@ -116,15 +117,22 @@ sealed class LspConfig {
     _openDocuments.remove(filePath);
   }
 
-  Future<List<String>> getCompletions(int line, int character) async {
+  Future<List<LspCompletion>> getCompletions(int line, int character) async {
+    List<LspCompletion> completion = [];
     final response = await _sendRequest(
       method: 'textDocument/completion',
       params: _commonParams(line, character)
     );
-
-    return (response['result']['items'] as List?)
-        ?.map((item) => item['label'] as String)
-        .toList() ?? [];
+    for(var item in response['result']['items']) {
+      completion.add(LspCompletion(
+        label: item['label'],
+        itemType: CompletionItemType.values.firstWhere(
+          (type) => type.value == item['kind'],
+          orElse: () => CompletionItemType.text,
+        ),
+      ));
+    }
+    return completion;
   }
 
   Future<String> getHover(int line, int character) async {
