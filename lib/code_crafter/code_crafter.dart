@@ -335,7 +335,7 @@ class _CodeCrafterState extends State<CodeCrafter> {
                       padding: const EdgeInsets.symmetric(horizontal: 3),
                       child: Row(
                         children: [
-                          _suggestions[i] is LspCompletion ? _suggestions[i].icon  const SizedBox(),
+                          _suggestions[i] is LspCompletion ? _suggestions[i].icon : const SizedBox(),
                           const SizedBox(width: 6),
                           Text(
                             _suggestions[i].label,
