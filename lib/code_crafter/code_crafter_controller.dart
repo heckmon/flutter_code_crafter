@@ -318,9 +318,9 @@ class CodeCrafterController extends TextEditingController{
 
         offset += node.value!.length;
       } else if (node.children != null) {
-        final innerSpans = _convert(node.children!, offset, b1, b2);
-        spans.add(TextSpan(children: innerSpans, style: editorTheme[node.className ?? '']));
-        offset += _textLengthFromSpans(innerSpans);
+          final innerSpans = _convert(node.children!, offset, b1, b2);
+          spans.add(TextSpan(children: innerSpans, style: editorTheme[node.className ?? '']));
+          offset += _textLengthFromSpans(innerSpans);
       }
     }
 

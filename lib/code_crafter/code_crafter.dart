@@ -6,6 +6,7 @@ import '../utils/shared.dart';
 import '../gutter/gutter.dart';
 import '../AI_completion/ai.dart';
 import '../gutter/gutter_style.dart';
+import '../LSP/suggestion_style.dart';
 import './code_crafter_controller.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/material.dart';
@@ -25,6 +26,7 @@ class CodeCrafter extends StatefulWidget {
   final EditorField? editorField;
   final AiCompletion? aiCompletion;
   final LspConfig? lspConfig;
+  final SuggestionStyle? suggestionStyle;
   const CodeCrafter({
     super.key,
     required this.controller,
@@ -37,6 +39,7 @@ class CodeCrafter extends StatefulWidget {
     this.aiCompletion,
     this.aiCompletionTextStyle,
     this.lspConfig,
+    this.suggestionStyle,
     this.selectionHandleColor,
     this.selectionColor,
     this.cursorColor,
@@ -162,10 +165,10 @@ class _CodeCrafterState extends State<CodeCrafter> {
             _selected = 0;
             _sortSuggestions(prefix);
             final triggerChar = currentText[cursorOffset - 1];
-            if(!RegExp(r'[a-zA-Z]').hasMatch(triggerChar)) {
-            _hideSuggestionOverlay();
-            return;
-          }
+            if(!RegExp(r'[a-zA-Z._$]').hasMatch(triggerChar)) {
+              _hideSuggestionOverlay();
+              return;
+            }
             if(mounted) _showSuggestionOverlay();
           } else {
             _hideSuggestionOverlay();
@@ -342,9 +345,9 @@ class _CodeCrafterState extends State<CodeCrafter> {
             maxHeight: maxOverlayHeight,
           ),
           child: Card(
-            elevation: 6,
-            color: Shared().theme['root']?.backgroundColor?.withAlpha(220)  ?? Colors.black87,
-            shape: BeveledRectangleBorder(
+            elevation: widget.suggestionStyle?.elevation ?? 6,
+            color: widget.suggestionStyle?.backgroundColor ?? Shared().theme['root']?.backgroundColor?.withAlpha(220)  ?? Colors.black87,
+            shape: widget.suggestionStyle?.shape ?? BeveledRectangleBorder(
               side: BorderSide(
                 color: Shared().theme['root']?.color ?? Colors.white,
                 width: 0.2,
@@ -359,9 +362,9 @@ class _CodeCrafterState extends State<CodeCrafter> {
                   return InkWell(
                     autofocus: true,
                     focusNode: _selected == i ? _suggestionFocus : null,
-                    focusColor: Colors.blueAccent.withAlpha(50),
-                    hoverColor: Colors.grey.withAlpha(15),
-                    splashColor:  Colors.blueAccent.withAlpha(50),
+                    focusColor: widget.suggestionStyle?.focusColor ?? Colors.blueAccent.withAlpha(50),
+                    hoverColor: widget.suggestionStyle?.hoverColor ?? Colors.grey.withAlpha(15),
+                    splashColor: widget.suggestionStyle?.splashColor ?? Colors.blueAccent.withAlpha(50),
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 3),
                       child: Row(
@@ -370,7 +373,8 @@ class _CodeCrafterState extends State<CodeCrafter> {
                           const SizedBox(width: 6),
                           Text(
                             _suggestions[i] is LspCompletion ? _suggestions[i].label : _suggestions[i],
-                            style: TextStyle(
+                            overflow: TextOverflow.ellipsis,
+                            style: widget.suggestionStyle?.textStyle ?? TextStyle(
                               color: Shared().theme['root']?.color ?? Colors.white,
                               fontSize: (widget.textStyle?.fontSize ?? 14) - 2,
                             ),
@@ -453,12 +457,14 @@ class _CodeCrafterState extends State<CodeCrafter> {
 
                             if(value.logicalKey == LogicalKeyboardKey.arrowUp){
                               if(_suggestionShown){
+                                setState(() => _selected--);
                                 _suggestionFocus.requestFocus();
                               }
                             }
 
                             if(value.logicalKey == LogicalKeyboardKey.arrowDown){
                               if(_suggestionShown){
+                                setState(() => _selected++);
                                 _suggestionFocus.requestFocus();
                               }
                             }

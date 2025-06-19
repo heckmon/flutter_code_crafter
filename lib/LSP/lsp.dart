@@ -140,6 +140,7 @@ sealed class LspConfig {
       method: 'textDocument/hover',
       params: _commonParams(line, character)
     );
+    if(response['result'] == null || response['result'].isEmpty) return '';
     return response['result']['contents']['value'] ?? '';
   }
 
@@ -148,6 +149,7 @@ sealed class LspConfig {
       method: 'textDocument/definition',
       params: _commonParams(line, character)
     );
+    if(response['result'] == null || response['result'].isEmpty) return '';
     return response['result'][1]['uri'] ?? '';
   }
 
@@ -158,6 +160,7 @@ sealed class LspConfig {
       method: 'textDocument/references',
       params: params
     );
+    if(response['result'] == null || response['result'].isEmpty) return [];
     return response['result'];
   }
 
