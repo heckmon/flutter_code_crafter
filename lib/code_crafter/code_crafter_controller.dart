@@ -26,20 +26,40 @@ class CodeCrafterController extends TextEditingController{
   @override
   set value(TextEditingValue newValue) {
     final TextEditingValue oldValue = super.value;
-    const Map<String, String> brackets = {'(': ')', '{': '}', '[': ']', '"': '"', "'": "'"};
+    const pairs = {'(': ')', '{': '}', '[': ']', '"': '"', "'": "'"};
+    final openers  = pairs.keys.toSet();
+    final closers  = pairs.values.toSet();
 
-    if (newValue.text.length > oldValue.text.length && newValue.selection.baseOffset > 0) {
-      final int cursorPos = newValue.selection.baseOffset;
-      final String insertedChar = newValue.text[cursorPos - 1];
-      if (brackets.containsKey(insertedChar)) {
-        final String before = newValue.text.substring(0, cursorPos);
-        final String after = newValue.text.substring(cursorPos);
-        final String closing = brackets[insertedChar]!;
+    if (newValue.text.length == oldValue.text.length + 1 &&
+        newValue.selection.baseOffset > 0) {
+
+      final cursorPos   = newValue.selection.baseOffset;
+      final inserted    = newValue.text[cursorPos - 1];
+
+      if (openers.contains(inserted)) {
+        final closing = pairs[inserted]!;
+        final before  = newValue.text.substring(0, cursorPos);
+        final after   = newValue.text.substring(cursorPos);
+
         super.value = TextEditingValue(
-          text: '$before$closing$after',
+          text:  '$before$closing$after',
           selection: TextSelection.collapsed(offset: cursorPos),
         );
         return;
+      }
+
+      if (closers.contains(inserted)) {
+        final oldCursorPos = oldValue.selection.baseOffset;
+        if (oldCursorPos < oldValue.text.length) {
+          final charAfterCursor = oldValue.text[oldCursorPos];
+          if (charAfterCursor == inserted) {
+            super.value = TextEditingValue(
+              text: oldValue.text,
+              selection: TextSelection.collapsed(offset: oldCursorPos + 1),
+            );
+            return;
+          }
+        }
       }
     }
 
@@ -91,7 +111,7 @@ class CodeCrafterController extends TextEditingController{
   Set<int> _findUnmatchedBrackets(String text) {
     final stack = <int>[];
     final unmatched = <int>{};
-    const Map<String, String> pairs = {'(': ')', '{': '}', '[': ']'};
+    const Map<String, String> pairs = {'(': ')', '{': '}', '[': ']', '<': '>', "'": "'", '"': '"'};
     final Set<String> openers = pairs.keys.toSet();
     final Set<String> closers = pairs.values.toSet();
 
@@ -118,8 +138,8 @@ class CodeCrafterController extends TextEditingController{
   }
 
   int? _findMatchingBracket(String text, int pos) {
-    const Map<String, String> pairs = {'(': ')', '{': '}', '[': ']', ')': '(', '}': '{', ']': '['};
-    const String openers = '({[';
+    const Map<String, String> pairs = {'(': ')', '{': '}', '[': ']', ')': '(', '}': '{', ']': '[', '<': '>', '>': '<'};
+    const String openers = '({[<';
 
     if (pos < 0 || pos >= text.length) return null;
 
@@ -163,8 +183,8 @@ class CodeCrafterController extends TextEditingController{
     if (cursorPosition >= 0 && cursorPosition <= text.length) {
       final String? before = cursorPosition > 0 ? text[cursorPosition - 1] : null;
       final String? after = cursorPosition < text.length ? text[cursorPosition] : null;
-      final int? pos = (before != null && '{}[]()'.contains(before)) ? cursorPosition - 1
-        : (after != null && '{}[]()'.contains(after)) ? cursorPosition : null;
+      final int? pos = (before != null && '{}[]()<>'.contains(before)) ? cursorPosition - 1
+        : (after != null && '{}[]()<>'.contains(after)) ? cursorPosition : null;
 
       if (pos != null) {
         final match = _findMatchingBracket(text, pos);

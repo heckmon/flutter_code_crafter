@@ -109,33 +109,63 @@ class _CodeCrafterState extends State<CodeCrafter> {
     String oldVal = '';
     _value = widget.controller.text;
     widget.controller.addListener(() {
+      final currentText = widget.controller.text;
+      final cursorOffset = widget.controller.selection.baseOffset;
+      final lines = currentText.substring(0, cursorOffset).split('\n');
+      final line = lines.length - 1;
+      final prefix = _getCurrentWordPrefix(currentText,  cursorOffset);
+      final character = lines.isNotEmpty ? lines.last.length : 0;
+      _recentlyTyped = currentText.length > oldVal.length;
+      oldVal = currentText;
+
       if(widget.lspConfig == null){
         final RegExp regExp = RegExp(r'\b\w+\b');
         final List<String> words = regExp.allMatches(widget.controller.text).map((m) => m.group(0)!).toList();
-        _suggestions.addAll(words);
+        String currentWord = '';
+        if (widget.controller.text.isNotEmpty) {
+          final match = RegExp(r'\w+$').firstMatch(widget.controller.text);
+          if (match != null) {
+            currentWord = match.group(0)!;
+          }
+        }
+
+        _suggestions.clear();
+        for (var i in words) {
+          if (!_suggestions.contains(i) && i != currentWord) {
+            _suggestions.add(i);
+          }
+        }
+
+        if (prefix.isNotEmpty) {
+          _suggestions = _suggestions.where((s) => s.startsWith(prefix)).toList();
+        }
+
+        if (_recentlyTyped && _suggestions.isNotEmpty && cursorOffset > 0) {
+          _sortSuggestions(prefix);
+          final triggerChar = currentText[cursorOffset - 1];
+          if (!RegExp(r'[a-zA-Z]').hasMatch(triggerChar)) {
+            _hideSuggestionOverlay();
+            return;
+          }
+          if (mounted) _showSuggestionOverlay();
+        } else {
+          _hideSuggestionOverlay();
+        }
       }
     _cursorPosition = widget.controller.selection.baseOffset;
       if(widget.lspConfig != null && widget.controller.selection.baseOffset > 0) {
         (() async{
           await widget.lspConfig!.updateDocument(widget.controller.text);
-          final currentText = widget.controller.text;
-          final cursorOffset = widget.controller.selection.baseOffset;
-          final lines = currentText.substring(0, cursorOffset).split('\n');
-          final line = lines.length - 1;
-          final prefix = _getCurrentWordPrefix(currentText,  cursorOffset);
-          final character = lines.isNotEmpty ? lines.last.length : 0;
           final suggestion = await widget.lspConfig!.getCompletions(line, character);
-          _recentlyTyped = currentText.length > oldVal.length;
-          oldVal = currentText;
           if (_recentlyTyped && suggestion.isNotEmpty && cursorOffset > 0) {
             _suggestions = suggestion;
             _selected = 0;
             _sortSuggestions(prefix);
             final triggerChar = currentText[cursorOffset - 1];
-            if([' ', '\n', '(' ,')', '[', ']', '{', '}', ';', ':', ''].contains(triggerChar)) {
-              _hideSuggestionOverlay();
-              return;
-            }
+            if(!RegExp(r'[a-zA-Z]').hasMatch(triggerChar)) {
+            _hideSuggestionOverlay();
+            return;
+          }
             if(mounted) _showSuggestionOverlay();
           } else {
             _hideSuggestionOverlay();
@@ -339,7 +369,7 @@ class _CodeCrafterState extends State<CodeCrafter> {
                           _suggestions[i] is LspCompletion ? _suggestions[i].icon : const SizedBox(),
                           const SizedBox(width: 6),
                           Text(
-                            _suggestions[i].label,
+                            _suggestions[i] is LspCompletion ? _suggestions[i].label : _suggestions[i],
                             style: TextStyle(
                               color: Shared().theme['root']?.color ?? Colors.white,
                               fontSize: (widget.textStyle?.fontSize ?? 14) - 2,
@@ -431,6 +461,10 @@ class _CodeCrafterState extends State<CodeCrafter> {
                               if(_suggestionShown){
                                 _suggestionFocus.requestFocus();
                               }
+                            }
+
+                            if(value.logicalKey == LogicalKeyboardKey.enter){
+                              if(_suggestionShown) _suggestionFocus.requestFocus();
                             }
 
                             if(value.logicalKey == LogicalKeyboardKey.tab){
