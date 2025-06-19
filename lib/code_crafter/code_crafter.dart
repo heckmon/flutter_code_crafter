@@ -111,7 +111,7 @@ class _CodeCrafterState extends State<CodeCrafter> {
     widget.controller.addListener(() {
       if(widget.lspConfig == null){
         final RegExp regExp = RegExp(r'\b\w+\b');
-        final List<String> words = regExp.allMatches(text).map((m) => m.group(0)!).toList();
+        final List<String> words = regExp.allMatches(widget.controller.text).map((m) => m.group(0)!).toList();
         _suggestions.addAll(words);
       }
     _cursorPosition = widget.controller.selection.baseOffset;
@@ -208,8 +208,9 @@ class _CodeCrafterState extends State<CodeCrafter> {
       if (aStartsWith && !bStartsWith) return -1;
       if (!aStartsWith && bStartsWith) return 1;
 
-      a is LspCompletion ? return b.label.compareTo(a.label)
-      : return b.compareTo(a);
+      return a is LspCompletion
+      ? b.label.compareTo(a.label)
+      : b.compareTo(a);
     });
   }
 
