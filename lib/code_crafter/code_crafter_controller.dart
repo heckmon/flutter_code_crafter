@@ -30,8 +30,7 @@ class CodeCrafterController extends TextEditingController{
     final openers  = pairs.keys.toSet();
     final closers  = pairs.values.toSet();
 
-    if (newValue.text.length == oldValue.text.length + 1 &&
-        newValue.selection.baseOffset > 0) {
+    if (newValue.text.length == oldValue.text.length + 1 && newValue.selection.baseOffset > 0) {
 
       final cursorPos   = newValue.selection.baseOffset;
       final inserted    = newValue.text[cursorPos - 1];
@@ -80,10 +79,10 @@ class CodeCrafterController extends TextEditingController{
       final prevLine = lines[lines.length - 2];
       final indentMatch = RegExp(r'^\s*').firstMatch(prevLine);
       final prevIndent = indentMatch?.group(0) ?? '';
-      final shouldIndent = RegExp(r'[:{[(]\s*$').hasMatch(prevLine);
+      final shouldIndent = RegExp(r'[:{[(<]\s*$').hasMatch(prevLine);
       final extraIndent = shouldIndent ? ' ' * Shared().tabSize : '';
       final indent = prevIndent + extraIndent;
-      final openToClose = {'{': '}', '(': ')', '[': ']'};
+      final openToClose = {'{': '}', '(': ')', '[': ']', '<': '>'};
       final lastChar = prevLine.trimRight().isNotEmpty ? prevLine.trimRight().characters.last : null;
       final nextChar = textAfterCursor.trimLeft().isNotEmpty ? textAfterCursor.trimLeft().characters.first : null;
       final isBracketOpen = openToClose.containsKey(lastChar);
@@ -111,12 +110,28 @@ class CodeCrafterController extends TextEditingController{
   Set<int> _findUnmatchedBrackets(String text) {
     final stack = <int>[];
     final unmatched = <int>{};
-    const Map<String, String> pairs = {'(': ')', '{': '}', '[': ']', '<': '>', "'": "'", '"': '"'};
+    const Map<String, String> pairs = {
+      '(': ')', '{': '}', '[': ']', '<': '>', "'": "'", '"': '"'
+    };
     final Set<String> openers = pairs.keys.toSet();
     final Set<String> closers = pairs.values.toSet();
 
+    String? currentStringQuote;
+
     for (int i = 0; i < text.length; i++) {
       final char = text[i];
+
+      if (char == '"' || char == "'") {
+        if (currentStringQuote == null) {
+          currentStringQuote = char;
+        } else if (currentStringQuote == char) {
+          currentStringQuote = null;
+        }
+        continue;
+      }
+
+      if (currentStringQuote != null) continue;
+
       if (openers.contains(char)) {
         stack.add(i);
       } else if (closers.contains(char)) {
@@ -133,9 +148,11 @@ class CodeCrafterController extends TextEditingController{
         }
       }
     }
+
     unmatched.addAll(stack);
     return unmatched;
   }
+
 
   int? _findMatchingBracket(String text, int pos) {
     const Map<String, String> pairs = {'(': ')', '{': '}', '[': ']', ')': '(', '}': '{', ']': '[', '<': '>', '>': '<'};
@@ -278,54 +295,71 @@ class CodeCrafterController extends TextEditingController{
   }
 
   List<TextSpan> _convert(
-      List<Node> nodes,
-      [int startOffset = 0, int? b1, int? b2, Set<int> unmatched = const {}]
-    ) {
+    List<Node> nodes,
+    [int startOffset = 0, int? b1, int? b2, Set<int> unmatched = const {}]
+  ) {
     List<TextSpan> spans = [];
     int offset = startOffset;
-    TextStyle? style;
 
     for (final node in nodes) {
       if (node.value != null) {
-        for (int i = 0; i < node.value!.length; i++) {
-          final globalIndex = offset + i;
-          final char = node.value![i];
-          final isMatch = (globalIndex == b1 || globalIndex == b2);
-          final isUnmatched = unmatched.contains(globalIndex);
-          if (isUnmatched) {
-            style = const TextStyle(
-              color: Colors.red, fontWeight: FontWeight.bold,
-              decoration: TextDecoration.underline,
-              decorationStyle: TextDecorationStyle.wavy,
-              decorationColor: Colors.red
-            );
-          } else if (isMatch) {
-            style = (editorTheme[node.className ?? '']?.merge(TextStyle(
-                background: Paint()
-                    ..style = PaintingStyle.stroke
-                    ..color = editorTheme['root']?.color ?? Colors.white,
-                )) ?? TextStyle(
-                  background: Paint()
-                    ..style = PaintingStyle.stroke
-                    ..color = editorTheme['root']?.color ?? Colors.white,
-                ));
-          } else {
-            style = editorTheme[node.className ?? ''];
-          }
-          
-          spans.add(TextSpan(text: char, style: style));
-        }
+        final lines = node.value!.split('\n');
+        for (int lineIdx = 0; lineIdx < lines.length; lineIdx++) {
+          final line      = lines[lineIdx];
+          final startOfLineOffset = offset;
+          offset += line.length + (lineIdx == lines.length - 1 ? 0 : 1);
+          final match     = RegExp(r'^(\s*)').firstMatch(line);
+          final leading   = match?.group(0) ?? '';
+          final indentLen = leading.length;
+          final indentLvl = indentLen ~/ Shared().tabSize;
+          final Set<int> guideCols = {
+            for (int k = 0; k < indentLvl; k++) k * Shared().tabSize
+          };
+          for (int col = 0; col < line.length; col++) {
+            final globalIdx = startOfLineOffset + col;
+            String ch       = line[col];
+            if (ch == ' ' && guideCols.contains(col)) ch = '│';   // or '|'
+            final bool isMatch     = globalIdx == b1 || globalIdx == b2;
+            final bool isUnmatched = unmatched.contains(globalIdx);
 
-        offset += node.value!.length;
+            TextStyle? charStyle = editorTheme[node.className ?? ''];
+
+            if (ch == '│') {
+              charStyle = const TextStyle(color: Colors.grey);
+            }
+
+            if (isUnmatched) {
+              charStyle = (charStyle ?? const TextStyle()).merge(const TextStyle(
+                color: Colors.red,
+                decoration: TextDecoration.underline,
+                decorationStyle: TextDecorationStyle.wavy,
+              ));
+            } else if (isMatch) {
+              charStyle = (charStyle ?? const TextStyle()).merge(TextStyle(
+                background: Paint()
+                  ..style = PaintingStyle.stroke
+                  ..color  = editorTheme['root']?.color ?? Colors.white,
+              ));
+            }
+
+            spans.add(TextSpan(text: ch, style: charStyle));
+          }
+
+          if (lineIdx != lines.length - 1) {
+            spans.add(const TextSpan(text: '\n'));
+          }
+        }
       } else if (node.children != null) {
-          final innerSpans = _convert(node.children!, offset, b1, b2);
-          spans.add(TextSpan(children: innerSpans, style: editorTheme[node.className ?? '']));
-          offset += _textLengthFromSpans(innerSpans);
+        final inner = _convert(node.children!, offset, b1, b2, unmatched);
+        spans.add(TextSpan(children: inner, style: editorTheme[node.className ?? '']));
+        offset += _textLengthFromSpans(inner);
       }
     }
 
+
     return spans;
   }
+
 
   int _textLengthFromSpans(List<InlineSpan> spans) {
     int length = 0;
@@ -343,4 +377,62 @@ class CodeCrafterController extends TextEditingController{
   void refresh(){
     notifyListeners();
   }
+  
+  // The methods below are borrowed (with gratitude) from the code_text_field package:
+  // https://github.com/BertrandBev/code_field
+
+
+  /// Sets a specific cursor position in the text
+  void setCursor(int offset) {
+    selection = TextSelection.collapsed(offset: offset);
+  }
+
+  /// Replaces the current [selection] by [str]
+  void insertStr(String str) {
+    final sel = selection;
+    text = text.replaceRange(selection.start, selection.end, str);
+    final len = str.length;
+
+    selection = sel.copyWith(
+      baseOffset: sel.start + len,
+      extentOffset: sel.start + len,
+    );
+  }
+
+  /// Remove the char just before the cursor or the selection
+  void removeChar() {
+    if (selection.start < 1) {
+      return;
+    }
+
+    final sel = selection;
+    text = text.replaceRange(selection.start - 1, selection.start, '');
+
+    selection = sel.copyWith(
+      baseOffset: sel.start - 1,
+      extentOffset: sel.start - 1,
+    );
+  }
+
+  /// Remove the selected text
+  void removeSelection() {
+    final sel = selection;
+    text = text.replaceRange(selection.start, selection.end, '');
+
+    selection = sel.copyWith(
+      baseOffset: sel.start,
+      extentOffset: sel.start,
+    );
+  }
+
+  /// Remove the selection or last char if the selection is empty
+  void backspace() {
+    if (selection.start < selection.end) {
+      removeSelection();
+    } else {
+      removeChar();
+    }
+  }
+
+
 }
