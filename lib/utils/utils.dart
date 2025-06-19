@@ -23,6 +23,109 @@ class FoldRange {
     this.endLine,{this.isFolded = false});
 }
 
+enum CompletionItemType {
+  text(1),
+  method(2),
+  function(3),
+  constructor(4),
+  field(5),
+  variable(6),
+  class_(7),
+  interface(8),
+  module(9),
+  property(10),
+  unit(11),
+  value_(12),
+  enum_(13),
+  keyword(14),
+  snippet(15),
+  color(16),
+  file(17),
+  reference(18),
+  folder(19),
+  enumMember(20),
+  constant(21),
+  struct(22),
+  event(23),
+  operator(24),
+  typeParameter(25);
+
+  final int value;
+  const CompletionItemType(this.value);
+}
+
+Map<CompletionItemType, Icon> completionItemIcons = {
+  CompletionItemType.text: Icon(Icons.text_snippet_rounded, color: Colors.grey),
+  CompletionItemType.method: Icon(CustomIcons.method, color: const Color(0xff9e74c0)),
+  CompletionItemType.function: Icon(CustomIcons.method, color: const Color(0xff9e74c0)),
+  CompletionItemType.constructor: Icon(CustomIcons.method, color: const Color(0xff9e74c0)),
+  CompletionItemType.field: Icon(CustomIcons.field, color: const Color(0xff75beff)),
+  CompletionItemType.variable: Icon(CustomIcons.variable, color: const Color(0xff75beff)),
+  CompletionItemType.class_: Icon(CustomIcons.class_, color: const Color(0xffee9d28)),
+  CompletionItemType.interface: Icon(CustomIcons.interface, color: Colors.grey),
+  CompletionItemType.module: Icon(Icons.folder_special, color: Colors.grey),
+  CompletionItemType.property: Icon(Icons.build, color: Colors.grey),
+  CompletionItemType.unit: Icon(Icons.view_module, color: Colors.grey),
+  CompletionItemType.value_: Icon(Icons.numbers, color: Colors.grey),
+  CompletionItemType.enum_: Icon(CustomIcons.enum_, color: const Color(0xffee9d28)),
+  CompletionItemType.keyword: Icon(CustomIcons.keyword, color: Colors.grey),
+  CompletionItemType.snippet: Icon(CustomIcons.snippet, color: Colors.grey),
+  CompletionItemType.color: Icon(Icons.color_lens, color: Colors.grey),
+  CompletionItemType.file: Icon(Icons.insert_drive_file, color: Colors.grey),
+  CompletionItemType.reference: Icon(CustomIcons.reference, color: Colors.grey),
+  CompletionItemType.folder: Icon(Icons.folder, color: Colors.grey),
+  CompletionItemType.enumMember: Icon(CustomIcons.enum_, color: const Color(0xff75beff)),
+  CompletionItemType.constant: Icon(CustomIcons.constant, color: const Color(0xff75beff)),
+  CompletionItemType.struct: Icon(CustomIcons.struct, color: const Color(0xff75beff)),
+  CompletionItemType.event: Icon(CustomIcons.event, color: const Color(0xffee9d28)),
+  CompletionItemType.operator: Icon(CustomIcons.operator, color: Colors.grey),
+  CompletionItemType.typeParameter: Icon(CustomIcons.parameter, color: const Color(0xffee9d28)),
+};
+
+class CustomIcons{
+  static const IconData method = IconData(0xe900, fontFamily: 'Method');
+  static const IconData variable = IconData(0xe900, fontFamily: 'Variable');
+  static const IconData class_ = IconData(0xe900, fontFamily: 'Class');
+  static const IconData enum_ = IconData(0x900, fontFamily: 'Enum');
+  static const IconData keyword = IconData(0x900, fontFamily: 'KeyWord');
+  static const IconData reference = IconData(0x900, fontFamily: 'Reference');
+  static const IconData constant = IconData(0x900, fontFamily: 'Constant');
+  static const IconData struct = IconData(0x900, fontFamily: 'Struct');
+  static const IconData event = IconData(0x900, fontFamily: 'Event');
+  static const IconData operator = IconData(0x900, fontFamily: 'Operator');
+  static const IconData parameter = IconData(0x900, fontFamily: 'Parameter');
+  static const IconData snippet = IconData(0x900, fontFamily: 'Snippet');
+  static const IconData interface = IconData(0x900, fontFamily: 'Interface');
+  static const IconData field = IconData(0x900, fontFamily: 'Field');
+}
+
+class LspCompletion{
+  final String label;
+  final CompletionItemType itemType;
+  final Icon icon;
+
+  LspCompletion({
+    required this.label,
+    required this.itemType,
+  }): icon = Icon(
+    completionItemIcons[itemType]!.icon,
+    color: completionItemIcons[itemType]!.color,
+    size: 18, 
+  );
+}
+
+class LspErrors{
+  final int severity;
+  final Map<String, dynamic> range;
+  String message;
+
+  LspErrors({
+    required this.severity,
+    required this.range,
+    required this.message,
+  });
+}
+
 class EditorField {
   // Callbacks
   final void Function(String)? onChanged, onSubmitted;
@@ -163,95 +266,4 @@ class EditorField {
       contextMenuBuilder: contextMenuBuilder,
     );
   }
-}
-
-enum CompletionItemType {
-  text(1),
-  method(2),
-  function(3),
-  constructor(4),
-  field(5),
-  variable(6),
-  class_(7),
-  interface(8),
-  module(9),
-  property(10),
-  unit(11),
-  value_(12),
-  enum_(13),
-  keyword(14),
-  snippet(15),
-  color(16),
-  file(17),
-  reference(18),
-  folder(19),
-  enumMember(20),
-  constant(21),
-  struct(22),
-  event(23),
-  operator(24),
-  typeParameter(25);
-
-  final int value;
-  const CompletionItemType(this.value);
-}
-
-Map<CompletionItemType, Icon> completionItemIcons = {
-  CompletionItemType.text: Icon(Icons.text_snippet_rounded, color: Colors.grey),
-  CompletionItemType.method: Icon(CustomIcons.method, color: const Color(0xff9e74c0)),
-  CompletionItemType.function: Icon(CustomIcons.method, color: const Color(0xff9e74c0)),
-  CompletionItemType.constructor: Icon(Icons.build, color: const Color(0xff75beff)),
-  CompletionItemType.field: Icon(CustomIcons.field, color: const Color(0xff75beff)),
-  CompletionItemType.variable: Icon(CustomIcons.variable, color: const Color(0xff75beff)),
-  CompletionItemType.class_: Icon(CustomIcons.class_, color: const Color(0xffee9d28)),
-  CompletionItemType.interface: Icon(CustomIcons.interface, color: Colors.grey),
-  CompletionItemType.module: Icon(Icons.folder_special, color: Colors.grey),
-  CompletionItemType.property: Icon(Icons.build, color: Colors.grey),
-  CompletionItemType.unit: Icon(Icons.view_module, color: Colors.grey),
-  CompletionItemType.value_: Icon(Icons.numbers, color: Colors.grey),
-  CompletionItemType.enum_: Icon(CustomIcons.enum_, color: const Color(0xffee9d28)),
-  CompletionItemType.keyword: Icon(CustomIcons.keyword, color: Colors.grey),
-  CompletionItemType.snippet: Icon(CustomIcons.snippet, color: Colors.grey),
-  CompletionItemType.color: Icon(Icons.color_lens, color: Colors.grey),
-  CompletionItemType.file: Icon(Icons.insert_drive_file, color: Colors.grey),
-  CompletionItemType.reference: Icon(CustomIcons.reference, color: Colors.grey),
-  CompletionItemType.folder: Icon(Icons.folder, color: Colors.grey),
-  CompletionItemType.enumMember: Icon(CustomIcons.enum_, color: const Color(0xff75beff)),
-  CompletionItemType.constant: Icon(CustomIcons.constant, color: const Color(0xff75beff)),
-  CompletionItemType.struct: Icon(CustomIcons.struct, color: const Color(0xff75beff)),
-  CompletionItemType.event: Icon(CustomIcons.event, color: const Color(0xffee9d28)),
-  CompletionItemType.operator: Icon(CustomIcons.operator, color: Colors.grey),
-  CompletionItemType.typeParameter: Icon(CustomIcons.parameter, color: const Color(0xffee9d28)),
-};
-
-class LspCompletion{
-  final String label;
-  final CompletionItemType itemType;
-  final Icon icon;
-
-  LspCompletion({
-    required this.label,
-    required this.itemType,
-  }): icon = Icon(
-    completionItemIcons[itemType]!.icon,
-    color: completionItemIcons[itemType]!.color,
-    size: 18, 
-  );
-}
-
-class CustomIcons{
-  static const IconData method = IconData(0xe900, fontFamily: 'Method');
-  static const IconData variable = IconData(0xe900, fontFamily: 'Variable');
-  static const IconData class_ = IconData(0xe900, fontFamily: 'Class');
-  static const IconData enum_ = IconData(0x900, fontFamily: 'Enum');
-  static const IconData keyword = IconData(0x900, fontFamily: 'KeyWord');
-  static const IconData reference = IconData(0x900, fontFamily: 'Reference');
-  static const IconData constant = IconData(0x900, fontFamily: 'Constant');
-  static const IconData struct = IconData(0x900, fontFamily: 'Struct');
-  static const IconData event = IconData(0x900, fontFamily: 'Event');
-  static const IconData operator = IconData(0x900, fontFamily: 'Operator');
-  static const IconData parameter = IconData(0x900, fontFamily: 'Parameter');
-  static const IconData snippet = IconData(0x900, fontFamily: 'Snippet');
-  static const IconData interface = IconData(0x900, fontFamily: 'Interface');
-  static const IconData field = IconData(0x900, fontFamily: 'Field');
 }

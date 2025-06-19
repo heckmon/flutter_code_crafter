@@ -65,6 +65,7 @@ class _CodeCrafterState extends State<CodeCrafter> {
   int _cursorPosition = 0, _selected = 0;
   OverlayEntry? _suggestionOverlay;
   List<dynamic> _suggestions = [];
+  List<LspErrors> _errors = [];
   bool _recentlyTyped = false, _suggestionShown = false;
   Rect _caretRect = Rect.zero;
   String? content;
@@ -75,6 +76,27 @@ class _CodeCrafterState extends State<CodeCrafter> {
     _suggestionFocus = FocusNode();
     _codeFocus = widget.focusNode ?? FocusNode();
     widget.controller.text = widget.initialText ?? '';
+    if(widget.lspConfig != null){
+      widget.lspConfig!.responses.listen((data){
+        if(data['method'] == 'textDocument/publishDiagnostics'){
+          final diagnostics = data['params']['diagnostics'] as List;
+          _errors.clear();
+          if(diagnostics.isNotEmpty){
+            final List<LspErrors> errors = [];
+            for(final (item as Map<String, dynamic>) in diagnostics){
+              errors.add(
+                LspErrors(
+                  severity: item['severity'], 
+                  range: item['range'],
+                  message: item['message']
+                )
+              );
+            }
+            _errors = List.from(errors);
+          }
+        }
+      });
+    }
     if(widget.filePath != null) {
       (() async {
          content = await File(widget.filePath!).readAsString();
@@ -112,6 +134,12 @@ class _CodeCrafterState extends State<CodeCrafter> {
     String oldVal = '';
     _value = widget.controller.text;
     widget.controller.addListener(() {
+      for(final item in _errors){
+        print('\n');
+        print(item.message);
+        print(item.severity);
+        print(item.range);
+      }
       final currentText = widget.controller.text;
       final cursorOffset = widget.controller.selection.baseOffset;
       final lines = currentText.substring(0, cursorOffset).split('\n');
