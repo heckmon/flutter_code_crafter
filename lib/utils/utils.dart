@@ -127,6 +127,8 @@ class LspErrors{
 }
 
 class EditorField {
+  Key? key;
+
   // Callbacks
   final void Function(String)? onChanged, onSubmitted;
   final void Function()? onTap, onEditingComplete;
@@ -167,7 +169,8 @@ class EditorField {
   final MouseCursor? mouseCursor;
   final EditableTextContextMenuBuilder? contextMenuBuilder;
 
-  const EditorField({
+  EditorField({
+    this.key,
     this.onChanged,
     this.onTap,
     this.onEditingComplete,
@@ -208,6 +211,7 @@ class EditorField {
   });
 
   TextField build({
+    Key? key,
     required TextEditingController controller,
     required FocusNode focusNode,
     required bool autofocus,
@@ -217,6 +221,7 @@ class EditorField {
     required Map<String, TextStyle>? editorTheme,
   }) {
     return TextField(
+      key: key,
       controller: controller,
       focusNode: focusNode,
       autofocus: autofocus,
@@ -264,6 +269,94 @@ class EditorField {
       restorationId: restorationId,
       mouseCursor: mouseCursor,
       contextMenuBuilder: contextMenuBuilder,
+    );
+  }
+
+  EditorField copyWith({
+    Key? key,
+    void Function(String)? onChanged, onSubmitted,
+    void Function()? onTap, onEditingComplete,
+    void Function(PointerDownEvent)? onTapOutside,
+
+    // Keyboard & input
+    TextInputType? keyboardType,
+    TextInputAction? textInputAction,
+    List<TextInputFormatter>? inputFormatters,
+    TextCapitalization? textCapitalization,
+    bool? obscureText, enableSuggestions, autocorrect,
+
+    // Layout & appearance
+    InputDecoration? decoration,
+    TextAlign? textAlign,
+    TextStyle? style,
+    TextDirection? textDirection,
+    TextAlignVertical? textAlignVertical,
+    bool? expands,
+    int? maxLines, minLines, maxLength,
+    MaxLengthEnforcement? maxLengthEnforcement,
+
+    // Cursor & selection
+    bool? showCursor,
+    double? cursorWidth, cursorHeight,
+    Radius? cursorRadius,
+    Color? cursorColor,
+    bool? enableInteractiveSelection,
+    TextSelectionControls? selectionControls,
+
+    // Misc
+    ScrollPhysics? scrollPhysics,
+    ScrollController? scrollController,
+    SmartQuotesType? smartQuotesType,
+    SmartDashesType? smartDashesType,
+    Iterable<String>? autofillHints,
+    String? restorationId,
+    MouseCursor? mouseCursor,
+    EditableTextContextMenuBuilder? contextMenuBuilder
+   }){
+    return EditorField(
+      key: key ?? this.key,
+
+      onChanged: onChanged ?? this.onChanged,
+      onSubmitted: onSubmitted ?? this.onSubmitted,
+      onTap: onTap ?? this.onTap,
+      onEditingComplete: onEditingComplete ?? this.onEditingComplete,
+      onTapOutside: onTapOutside ?? this.onTapOutside,
+
+      keyboardType: keyboardType ?? this.keyboardType,
+      textInputAction: textInputAction ?? this.textInputAction,
+      inputFormatters: inputFormatters ?? this.inputFormatters,
+      textCapitalization: textCapitalization ?? this.textCapitalization,
+      obscureText: obscureText ?? this.obscureText,
+      enableSuggestions: enableSuggestions ?? this.enableSuggestions,
+      autocorrect: autocorrect ?? this.autocorrect,
+
+      decoration: decoration ?? this.decoration,
+      textAlign: textAlign ?? this.textAlign,
+      style: style ?? this.style,
+      textDirection: textDirection ?? this.textDirection,
+      textAlignVertical: textAlignVertical ?? this.textAlignVertical,
+      expands: expands ?? this.expands,
+      maxLines: maxLines ?? this.maxLines,
+      minLines: minLines ?? this.minLines,
+      maxLength: maxLength ?? this.maxLength,
+      maxLengthEnforcement: maxLengthEnforcement ?? this.maxLengthEnforcement,
+
+      showCursor: showCursor ?? this.showCursor,
+      cursorWidth: cursorWidth ?? this.cursorWidth,
+      cursorHeight: cursorHeight ?? this.cursorHeight,
+      cursorRadius: cursorRadius ?? this.cursorRadius,
+      cursorColor: cursorColor ?? this.cursorColor,
+      enableInteractiveSelection: enableInteractiveSelection ?? this.enableInteractiveSelection,
+      selectionControls: selectionControls ?? this.selectionControls,
+
+      scrollPhysics: scrollPhysics ?? this.scrollPhysics,
+      scrollController: scrollController ?? this.scrollController,
+      smartQuotesType: smartQuotesType ?? this.smartQuotesType,
+      smartDashesType: smartDashesType ?? this.smartDashesType,
+      autofillHints: autofillHints ?? this.autofillHints,
+      restorationId: restorationId ?? this.restorationId,
+      mouseCursor: mouseCursor ?? this.mouseCursor,
+      contextMenuBuilder: contextMenuBuilder ?? this.contextMenuBuilder,
     );
   }
 }

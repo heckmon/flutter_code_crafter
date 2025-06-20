@@ -430,6 +430,18 @@ class CodeCrafterController extends TextEditingController{
     }
   }
 
+  Map<String, int> getCursorLineAndChar() {
+    final int offset = selection.baseOffset;
+    if (offset < 0) selection = TextSelection.collapsed(offset: 0);
+    if (offset > text.length) selection = TextSelection.collapsed(offset: text.length);
+
+    final lines = text.substring(0, offset).split('\n');
+    final line = lines.length - 1;
+    final character = lines.isNotEmpty ? lines.last.length : 0;
+    return {'line': line, 'character': character};
+  }
+
+
   void refresh(){
     notifyListeners();
   }

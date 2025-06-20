@@ -26,7 +26,7 @@ class CodeCrafter extends StatefulWidget {
   final EditorField? editorField;
   final AiCompletion? aiCompletion;
   final LspConfig? lspConfig;
-  final SuggestionStyle? suggestionStyle;
+  final OverlayStyle? suggestionStyle, hoverDetailsStyle;
   const CodeCrafter({
     super.key,
     required this.controller,
@@ -40,6 +40,7 @@ class CodeCrafter extends StatefulWidget {
     this.aiCompletionTextStyle,
     this.lspConfig,
     this.suggestionStyle,
+    this.hoverDetailsStyle,
     this.selectionHandleColor,
     this.selectionColor,
     this.cursorColor,
@@ -59,12 +60,13 @@ class CodeCrafter extends StatefulWidget {
 
 class _CodeCrafterState extends State<CodeCrafter> {
   late final FocusNode _keyboardFocus, _codeFocus, _suggestionFocus;
+  late final ScrollController _hoverHorizontalScroll, _hoverVerticalSCroll;
   double gutterWidth = Shared().gutterWidth;
   Map<String, String> cachedResponse = {};
   Timer? _debounceTimer;
-  String _value = '';
+  String _value = '', _hoverDetails = '';
   int _cursorPosition = 0, _selected = 0;
-  OverlayEntry? _suggestionOverlay;
+  OverlayEntry? _suggestionOverlay, _detailsOverlay;
   List<dynamic> _suggestions = [];
   List<LspErrors> _diagnostics = [];
   bool _recentlyTyped = false, _suggestionShown = false;
@@ -76,6 +78,8 @@ class _CodeCrafterState extends State<CodeCrafter> {
     _keyboardFocus = FocusNode();
     _suggestionFocus = FocusNode();
     _codeFocus = widget.focusNode ?? FocusNode();
+    _hoverHorizontalScroll = ScrollController();
+    _hoverVerticalSCroll = ScrollController();
     widget.controller.text = widget.initialText ?? '';
     if(widget.lspConfig != null){
       widget.lspConfig!.responses.listen((data){
@@ -185,7 +189,8 @@ class _CodeCrafterState extends State<CodeCrafter> {
       if(widget.lspConfig != null && widget.controller.selection.baseOffset > 0) {
         (() async{
           await widget.lspConfig!.updateDocument(widget.controller.text);
-          final suggestion = await widget.lspConfig!.getCompletions(line, character);
+          final List<LspCompletion> suggestion = await widget.lspConfig!.getCompletions(line, character);
+          _hoverDetails = await widget.lspConfig!.getHover(line, character);
           if (_recentlyTyped && suggestion.isNotEmpty && cursorOffset > 0) {
             _suggestions = suggestion;
             _selected = 0;
@@ -301,6 +306,11 @@ class _CodeCrafterState extends State<CodeCrafter> {
     _suggestionOverlay = null;
   }
 
+  void _hideDetailsOverlay() {
+    _detailsOverlay?.remove();
+    _detailsOverlay = null;
+  }
+
   RenderEditable? _findRenderEditable(BuildContext root) {
     RenderEditable? result;
     void visitor(Element element) {
@@ -372,7 +382,7 @@ class _CodeCrafterState extends State<CodeCrafter> {
           ),
           child: Card(
             elevation: widget.suggestionStyle?.elevation ?? 6,
-            color: widget.suggestionStyle?.backgroundColor ?? Shared().theme['root']?.backgroundColor?.withAlpha(220)  ?? Colors.black87,
+            color: widget.suggestionStyle?.backgroundColor ?? widget.editorTheme?['root']?.backgroundColor?.withAlpha(220)  ?? Colors.black87,
             shape: widget.suggestionStyle?.shape ?? BeveledRectangleBorder(
               side: BorderSide(
                 color: Shared().theme['root']?.color ?? Colors.white,
@@ -401,7 +411,7 @@ class _CodeCrafterState extends State<CodeCrafter> {
                             _suggestions[i] is LspCompletion ? _suggestions[i].label : _suggestions[i],
                             overflow: TextOverflow.ellipsis,
                             style: widget.suggestionStyle?.textStyle ?? TextStyle(
-                              color: Shared().theme['root']?.color ?? Colors.white,
+                              color: widget.editorTheme?['root']?.color ?? Colors.white,
                               fontSize: (widget.textStyle?.fontSize ?? 14) - 2,
                             ),
                           ),
@@ -426,6 +436,101 @@ class _CodeCrafterState extends State<CodeCrafter> {
     overlay.insert(_suggestionOverlay!);
   }
 
+  void _showDetailsOverlay(){
+    _hideDetailsOverlay();
+    if(_hoverDetails.isEmpty && _codeFocus.hasFocus) return;
+    final OverlayState overlay = Overlay.of(context);
+    final Rect caretGlobal = _globalCaretRect();
+    final double screenHeight = MediaQuery.of(context).size.height;
+    final double screenWidth = MediaQuery.of(context).size.width;
+    const double overlayWidth = 250.0, maxOverlayHeight = 300.0;
+    const int gap = 4;
+    final bool showAbove = caretGlobal.bottom + gap + maxOverlayHeight > screenHeight;
+    final bool showLeft = caretGlobal.left + overlayWidth > screenWidth;
+
+    final Map<String, int> cursorInfo = widget.controller.getCursorLineAndChar();
+    final int cursorLine = cursorInfo['line']!;
+    final int cursorChar = cursorInfo['character']!;
+
+    final error = _getErrorAtPosition(cursorLine, cursorChar);
+
+    final double top = showAbove
+      ? caretGlobal.top - gap - maxOverlayHeight
+      : caretGlobal.bottom + gap;
+
+    final double left = showLeft
+      ? caretGlobal.left - overlayWidth + caretGlobal.width
+      : caretGlobal.left;
+
+    _detailsOverlay = OverlayEntry(
+      builder: (ctx) => Positioned(
+        left: left,
+        top: top,
+        width: overlayWidth,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxHeight: maxOverlayHeight
+          ),
+          child: Card(
+            elevation: widget.hoverDetailsStyle?.elevation ?? 6,
+            color: widget.hoverDetailsStyle?.backgroundColor ?? widget.editorTheme?['root']?.backgroundColor?.withAlpha(220)  ?? Colors.black87,
+            shape: widget.hoverDetailsStyle?.shape ?? BeveledRectangleBorder(
+              side: BorderSide(
+                  color: widget.editorTheme?['root']?.color ?? Colors.white,
+                  width: 0.2,
+                ),
+              ),
+            child: RawScrollbar(
+              thumbVisibility: true,
+              thumbColor: (widget.editorTheme?['root']?.color ?? Colors.white).withAlpha(35),
+              controller: _hoverHorizontalScroll,
+              child: SingleChildScrollView(
+                controller: _hoverHorizontalScroll,
+                scrollDirection: Axis.horizontal,
+                child: RawScrollbar(
+                  thumbVisibility: true,
+                  controller: _hoverVerticalSCroll,
+                  child: SingleChildScrollView(
+                    controller: _hoverVerticalSCroll,
+                    scrollDirection: Axis.vertical,
+                    child: Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Text(
+                        error == null ? _hoverDetails : error.message,
+                        style: widget.hoverDetailsStyle?.textStyle ?? TextStyle(
+                          color: Shared().theme['root']?.color ?? Colors.white
+                        )
+                      ),
+                    )
+                  ),
+                ),
+              ),
+            ),
+          ),
+        )
+      )
+    );
+    overlay.insert(_detailsOverlay!);
+  }
+
+  LspErrors? _getErrorAtPosition(int line, int character) {
+    for (final error in _diagnostics) {
+      final start = error.range['start'];
+      final end = error.range['end'];
+      final startLine = start['line'] as int;
+      final startChar = start['character'] as int;
+      final endLine = end['line'] as int;
+      final endChar = end['character'] as int;
+
+      final inRange = (line > startLine || (line == startLine && character >= startChar)) &&
+                      (line < endLine || (line == endLine && character < endChar));
+      if (inRange) {
+        return error;
+      }
+    }
+    return null;
+  }
+
   Future<String> _getCachedRsponse(String codeToSend) async{
     final String key = codeToSend.hashCode.toString();
     if(cachedResponse.containsKey(key)){
@@ -438,6 +543,12 @@ class _CodeCrafterState extends State<CodeCrafter> {
 
   @override
   Widget build(BuildContext context) {
+    final EditorField? editorField = widget.editorField?.copyWith(
+      onTap: (){
+        _showDetailsOverlay();
+        widget.editorField?.onTap?.call();
+      }
+    );
     return LayoutBuilder(
       builder: (context, constraints) {
          WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -522,7 +633,7 @@ class _CodeCrafterState extends State<CodeCrafter> {
                             scrollDirection: Axis.horizontal,
                             child: SizedBox(
                               width: widget.wrapLines ? constraints.maxWidth - gutterWidth : double.maxFinite,
-                              child: widget.editorField?.build(
+                              child: editorField?.build(
                                 controller: widget.controller,
                                 focusNode: _codeFocus,
                                 autofocus: widget.autoFocus,
@@ -531,6 +642,9 @@ class _CodeCrafterState extends State<CodeCrafter> {
                                 fallbackCursorColor: widget.cursorColor,
                                 editorTheme: widget.editorTheme,
                               ) ?? TextField(
+                                onTap: () {
+                                  _showDetailsOverlay();
+                                },
                                 controller: widget.controller,
                                 focusNode: _codeFocus,
                                 autofocus: widget.autoFocus,
