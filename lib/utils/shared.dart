@@ -12,6 +12,8 @@ class Shared {
   Map<String, TextStyle> theme = {};
   TextStyle? textStyle, aiOverlayStyle;
   int tabSize = 0;
+  List<LspErrors> diagnostics = [];
+  bool enableRulerLines = true;
   CodeCrafterController controller = CodeCrafterController();
   ValueNotifier<List<LineState>> lineStates = ValueNotifier([]);
 }

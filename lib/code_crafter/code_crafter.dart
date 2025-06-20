@@ -21,7 +21,7 @@ class CodeCrafter extends StatefulWidget {
   final int tabSize;
   final GutterStyle? gutterStyle;
   final bool enableBreakPoints, enableFolding, autoFocus, readOnly;
-  final bool wrapLines;
+  final bool wrapLines, enableRulerLines;
   final FocusNode? focusNode;
   final EditorField? editorField;
   final AiCompletion? aiCompletion;
@@ -45,6 +45,7 @@ class CodeCrafter extends StatefulWidget {
     this.cursorColor,
     this.enableBreakPoints = true,
     this.enableFolding = true,
+    this.enableRulerLines = true,
     this.wrapLines = false,
     this.autoFocus = false,
     this.readOnly = false,
@@ -65,7 +66,7 @@ class _CodeCrafterState extends State<CodeCrafter> {
   int _cursorPosition = 0, _selected = 0;
   OverlayEntry? _suggestionOverlay;
   List<dynamic> _suggestions = [];
-  List<LspErrors> _errors = [];
+  List<LspErrors> _diagnostics = [];
   bool _recentlyTyped = false, _suggestionShown = false;
   Rect _caretRect = Rect.zero;
   String? content;
@@ -80,7 +81,8 @@ class _CodeCrafterState extends State<CodeCrafter> {
       widget.lspConfig!.responses.listen((data){
         if(data['method'] == 'textDocument/publishDiagnostics'){
           final diagnostics = data['params']['diagnostics'] as List;
-          _errors.clear();
+          _diagnostics.clear();
+          Shared().diagnostics.clear();
           if(diagnostics.isNotEmpty){
             final List<LspErrors> errors = [];
             for(final (item as Map<String, dynamic>) in diagnostics){
@@ -92,7 +94,8 @@ class _CodeCrafterState extends State<CodeCrafter> {
                 )
               );
             }
-            _errors = List.from(errors);
+            _diagnostics = List.from(errors);
+            Shared().diagnostics = _diagnostics;
           }
         }
       });
@@ -131,15 +134,10 @@ class _CodeCrafterState extends State<CodeCrafter> {
     Shared().aiOverlayStyle = widget.aiCompletionTextStyle;
     Shared().controller = widget.controller;
     Shared().tabSize = widget.tabSize;
+    Shared().enableRulerLines = widget.enableRulerLines;
     String oldVal = '';
     _value = widget.controller.text;
     widget.controller.addListener(() {
-      for(final item in _errors){
-        print('\n');
-        print(item.message);
-        print(item.severity);
-        print(item.range);
-      }
       final currentText = widget.controller.text;
       final cursorOffset = widget.controller.selection.baseOffset;
       final lines = currentText.substring(0, cursorOffset).split('\n');

@@ -9,6 +9,8 @@ class CodeCrafterController extends TextEditingController{
   Mode? get language => _language;
 
   String? _langId;
+  final Map<int, Set<int>> _highlightIndex = {};
+  TextStyle? _highlightStyle;
   
   set language(Mode? language){
     if(language == _language) return; 
@@ -303,13 +305,13 @@ class CodeCrafterController extends TextEditingController{
 
     for (final node in nodes) {
       if (node.value != null) {
-        final lines = node.value!.split('\n');
-        for (int lineIdx = 0; lineIdx < lines.length; lineIdx++) {
-          final line      = lines[lineIdx];
+        final nodeLines = node.value!.split('\n');
+        for (int lineIdx = 0; lineIdx < nodeLines.length; lineIdx++) {
+          final line = nodeLines[lineIdx];
           final startOfLineOffset = offset;
-          offset += line.length + (lineIdx == lines.length - 1 ? 0 : 1);
-          final match     = RegExp(r'^(\s*)').firstMatch(line);
-          final leading   = match?.group(0) ?? '';
+          offset += line.length + (lineIdx == nodeLines.length - 1 ? 0 : 1);
+          final match = RegExp(r'^(\s*)').firstMatch(line);
+          final leading = match?.group(0) ?? '';
           final indentLen = leading.length;
           final indentLvl = indentLen ~/ Shared().tabSize;
           final Set<int> guideCols = {
@@ -317,15 +319,42 @@ class CodeCrafterController extends TextEditingController{
           };
           for (int col = 0; col < line.length; col++) {
             final globalIdx = startOfLineOffset + col;
-            String ch       = line[col];
-            if (ch == ' ' && guideCols.contains(col)) ch = '│';   // or '|'
+            String ch = line[col];
+            if (ch == ' ' && guideCols.contains(col)) ch = '│';
             final bool isMatch     = globalIdx == b1 || globalIdx == b2;
             final bool isUnmatched = unmatched.contains(globalIdx);
 
             TextStyle? charStyle = editorTheme[node.className ?? ''];
 
             if (ch == '│') {
-              charStyle = const TextStyle(color: Colors.grey);
+              charStyle = TextStyle(
+                color: Shared().enableRulerLines ? Colors.grey : Colors.transparent,
+                fontSize: Shared().textStyle?.fontSize ?? 14
+                );
+            }
+
+            if (Shared().diagnostics.isNotEmpty) {
+              for (final item in Shared().diagnostics) {
+                if (lineIdx == item.range['start']['line']) {
+                  final int start = item.range['start']['character'] as int;
+                  final int end = item.range['end']['character'] as int;
+                  if (col >= start && col < end) {
+                    charStyle = TextStyle(
+                      decoration: TextDecoration.underline,
+                      decorationStyle: TextDecorationStyle.wavy,
+                      decorationThickness: 2,
+                      decorationColor: (() {
+                        switch (item.severity) {
+                          case 1: return Colors.red;
+                          case 2: return Colors.amber;
+                          case 3: return Colors.blueAccent;
+                          default: return Colors.transparent;
+                        }
+                      })()
+                    ).merge(Shared().textStyle);
+                  }
+                }
+              }
             }
 
             if (isUnmatched) {
@@ -342,21 +371,36 @@ class CodeCrafterController extends TextEditingController{
               ));
             }
 
+            if (_highlightIndex.isNotEmpty) {
+              for (final entry in _highlightIndex.entries) {
+                final wordLen = entry.key;
+                for (final startIdx in entry.value) {
+                  if (globalIdx >= startIdx && globalIdx < startIdx + wordLen) {
+                    charStyle = (charStyle ?? const TextStyle()).merge(
+                      _highlightStyle ??
+                       TextStyle(
+                        backgroundColor: Colors.amberAccent.withAlpha(80)
+                      ),
+                    );
+                  }
+                }
+              }
+            }
+
             spans.add(TextSpan(text: ch, style: charStyle));
           }
 
-          if (lineIdx != lines.length - 1) {
+          if (lineIdx != nodeLines.length - 1) {
             spans.add(const TextSpan(text: '\n'));
           }
         }
+
       } else if (node.children != null) {
         final inner = _convert(node.children!, offset, b1, b2, unmatched);
         spans.add(TextSpan(children: inner, style: editorTheme[node.className ?? '']));
         offset += _textLengthFromSpans(inner);
       }
     }
-
-
     return spans;
   }
 
@@ -372,6 +416,18 @@ class CodeCrafterController extends TextEditingController{
       }
     }
     return length;
+  }
+
+  void findWord(String word, {TextStyle? highlightStyle}){
+    _highlightStyle = highlightStyle;
+    _highlightIndex.clear();
+    if(word.isNotEmpty){
+      final regExp = RegExp('\\b$word\\b');
+      for(final match in regExp.allMatches(text)){
+         _highlightIndex.putIfAbsent(word.length, () => <int>{}).add(match.start);
+      }
+
+    }
   }
 
   void refresh(){
