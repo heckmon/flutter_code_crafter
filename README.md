@@ -11,15 +11,26 @@ A powerful and feature-rich code editor for flutter, designed to bring a seamles
 - Syntax highlighting ([available languages](https://github.com/git-touch/highlight.dart/tree/master/highlight/lib/languages))
 - Multiple themes ([available themes](https://github.com/git-touch/highlight.dart/tree/master/flutter_highlight/lib/themes))
 - Code folding
-- Vertical ruler lines (Indentation guides lines similar to VSCode)
 - AI code completion
 - Built-in universal LSP client (Suggestions, diagnostics, etc.)
+- Vertical ruler lines (Indentation guides lines similar to VSCode)
 - Code formatting (Auto indentation, line   wrapping, etc.)
 <br>
 
-<img src = "https://files.catbox.moe/wfny7c.gif" alt = "gif" width = "300" height = "550" style = "padding-right: 10px;">
-<img src = "https://files.catbox.moe/k8sfly.gif" alt = "gif" width = "300" height = "550" style = "padding-right: 10px;">
-<img src = "https://files.catbox.moe/kbpa95.gif" alt = "gif" width = "300" height = "550">
+<p align="left">
+  <img src="https://files.catbox.moe/wfny7c.gif" alt="Syntax Highlighting" width="300" height="550"><br>
+  <sub>AI Code completion and LSP suggestion</sub>
+</p>
+
+<p align="left">
+  <img src="https://files.catbox.moe/k8sfly.gif" alt="Code Folding" width="300" height="550"><br>
+  <sub>Code folding and breakpoints</sub>
+</p>
+
+<p align="left">
+  <img src="https://files.catbox.moe/kbpa95.gif" alt="AI Completion" width="300" height="550"><br>
+  <sub>LSP hover</sub>
+</p>
 
 <br>
 
