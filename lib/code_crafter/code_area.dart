@@ -8,9 +8,10 @@ import '../AI_completion/ai.dart';
 import '../gutter/gutter_style.dart';
 import '../LSP/suggestion_style.dart';
 import './code_crafter_controller.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/rendering.dart';
+import 'package:flutter/foundation.dart';
 
 class CodeCrafter extends StatefulWidget {
   final CodeCrafterController controller;
@@ -112,6 +113,10 @@ class _CodeCrafterState extends State<CodeCrafter> {
             selection: TextSelection.collapsed(offset: content?.length ?? 0)
           );
       })();
+    }
+    if(kIsWeb){
+      if(widget.filePath != null) throw PlatformException(code: "\nERROR\n" ,message: "The parameter filePath is not supported on web. Please remove it.\n");
+      if(widget.lspConfig != null) throw PlatformException(code:"\nERROR\n" ,message: "LSP is not supported on web in the current version; support may be added in the future\n");
     }
     if(widget.initialText != null && widget.filePath != null) {
       throw Exception('Initial text and file path cannot be both provided. Please provide either initialText or filePath.');
@@ -611,6 +616,10 @@ class _CodeCrafterState extends State<CodeCrafter> {
                             }
 
                             if(value.logicalKey == LogicalKeyboardKey.tab){
+                              if(!widget.wrapLines) {
+                                _codeFocus.requestFocus();
+                                return;
+                              }
                               int cursorPosition = widget.controller.selection.baseOffset;
                               String currText = widget.controller.text;
                               _keyboardFocus.previousFocus();

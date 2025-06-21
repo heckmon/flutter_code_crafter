@@ -1,8 +1,8 @@
 import 'dart:math';
-import '../code_crafter/code_crafter_controller.dart';
-import '../utils/shared.dart';
-import '../utils/utils.dart';
 import './gutter_style.dart';
+import '../utils/utils.dart';
+import '../utils/shared.dart';
+import '../code_crafter/code_crafter_controller.dart';
 import 'package:flutter/material.dart';
 
 
