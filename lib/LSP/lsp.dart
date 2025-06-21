@@ -14,7 +14,7 @@ sealed class LspConfig {
   /// The language ID of the language.
   ///
   /// languageId depends on the server you are using.
-  /// For example, for dart-analyzer give "rust" for pyright-langserver, it is 'python', so on.
+  /// For example, for rust-analyzer give "rust" for pyright-langserver, it is 'python', so on.
   final String languageId;
 
   /// The workspace path of the document to be processed by the LSP.
