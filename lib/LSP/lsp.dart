@@ -48,7 +48,7 @@ sealed class LspConfig {
   /// This method is used to initialize the LSP server.
   ///
   /// This method is used internally by the [CodeCrafter] widget and calling it directly is not recommended.
-  /// It may carsh the LSP server if called multiple times.
+  /// It may crash the LSP server if called multiple times.
   Future<void> initialize() async {
     final response = await _sendRequest(
       method: 'initialize',
