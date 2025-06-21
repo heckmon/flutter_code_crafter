@@ -15,6 +15,15 @@ A powerful and feature-rich code editor for flutter, designed to bring a seamles
 - AI code completion
 - Built-in universal LSP client (Suggestions, diagnostics, etc.)
 - Code formatting (Auto indentation, line   wrapping, etc.)
+<br>
+
+<img src = "https://files.catbox.moe/wfny7c.gif" alt = "gif" width = "300" height = "550" style = "padding-right: 10px;">
+<img src = "https://files.catbox.moe/k8sfly.gif" alt = "gif" width = "300" height = "550" style = "padding-right: 10px;">
+<img src = "https://files.catbox.moe/kbpa95.gif" alt = "gif" width = "300" height = "550">
+
+<br>
+
+> #### Note : The above features works on all supported languages, I just used python for the demo.<br> You can use any language with corresponding LSP server to get hover details and suggestions similar to VScode.
 
 ## Usage
 
