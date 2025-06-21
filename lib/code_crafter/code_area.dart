@@ -98,12 +98,12 @@ class CodeCrafter extends StatefulWidget {
 
   /// AI completion configuration for the [CodeCrafter] widget.
   ///
-  /// Documentation for [AiCompletion] can be found [here](https://github.com/heckmon/flutter_code_crafter/docs/AICompletion.md).
+  /// Documentation for [AiCompletion] can be found [here](https://github.com/heckmon/flutter_code_crafter/blob/main/docs/AICompletion.md).
   final AiCompletion? aiCompletion;
 
   /// LSP configuration for the [CodeCrafter] widget.
   ///
-  /// Documentation for [LspConfig] can be found [here](https://github.com/heckmon/flutter_code_crafter/docs/LSPClient.md)
+  /// Documentation for [LspConfig] can be found [here](https://github.com/heckmon/flutter_code_crafter/blob/main/docs/LSPClient.md)
   final LspConfig? lspConfig;
 
   /// The style for the LSP suggestions overlay.

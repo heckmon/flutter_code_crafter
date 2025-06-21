@@ -84,8 +84,8 @@ class _MainAppState extends State<MainApp> {
 
 ```
 ### Advanced usage
- - To Setup AI code completion, follow this documentation: [AI Code Completion](https://github.com/heckmon/flutter_code_crafter/docs/AICompletion.md)
- - To Setup LSP client, follow this documentation: [LSP Client](https://github.com/heckmon/flutter_code_crafter/docs/LSPClient.md)
+ - To Setup AI code completion, follow this documentation: [AI Code Completion](https://github.com/heckmon/flutter_code_crafter/blob/main/docs/AICompletion.md)
+ - To Setup LSP client, follow this documentation: [LSP Client](https://github.com/heckmon/flutter_code_crafter/blob/main/docs/LSPClient.md)
 
 
 ## Additional information

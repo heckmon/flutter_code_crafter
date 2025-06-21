@@ -4,7 +4,7 @@ import 'package:meta/meta.dart';
 import 'package:http/http.dart' as http;
 
 /// A class that provides AI completion functionality.
-/// Click here for documentation: [AICompletion](https://github.com/heckmon/flutter_code_crafter/docs/AICompletion.md)
+/// Click here for documentation: [AICompletion](https://github.com/heckmon/flutter_code_crafter/blob/main/docs/AICompletion.md)
 ///
 /// Example usage:
 ///
@@ -33,7 +33,7 @@ class AiCompletion {
   /// The model to use for AI completion.
   ///
   /// This should be an instance of a class that extends [Models].
-  /// Documentation and available models can be found here: [AICompletion](https://github.com/heckmon/flutter_code_crafter/docs/AICompletion.md)
+  /// Documentation and available models can be found here: [AICompletion](https://github.com/heckmon/flutter_code_crafter/blob/main/docs/AICompletion.md)
   Models model;
 
   /// Whether to enable AI completion. Defaults to true.
