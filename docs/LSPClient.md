@@ -11,7 +11,7 @@ If you use LSP, you must provide a valid `filePath` to the `filePath` parameter 
 
 ### 1. Using WebSocket
 
-The class `LSPWebSocketConfig` is used to connect to an LSP server using WebSocket. It takes the following parameters:
+The class `LspSocketConfig` is used to connect to an LSP server using WebSocket. It takes the following parameters:
 - `serverUrl`: The WebSocket URL of the LSP server.
 - `filePath`: A filePath is required by the LSP server to provide completions and diagnostics.
 - `workspacePath`: The workspace path is the current directory or the parent directory which holds the `filePath` file.
