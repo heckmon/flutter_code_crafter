@@ -44,7 +44,7 @@ Plug and play with `CodeCrafter` widget. Import a langauge from the [highlight](
 
 ```dart
 import 'package:flutter/material.dart';
-import 'package:code_crafter/code_crafter.dart';
+import 'package:flutter_code_crafter/code_crafter.dart';
 import 'package:flutter_highlight/themes/an-old-hope.dart'; // Import the theme you want to use
 import 'package:highlight/languages/python.dart'; // Import the language you want to use
 
