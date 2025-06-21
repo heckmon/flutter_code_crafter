@@ -117,7 +117,7 @@ If want to use a custom AI model that running on your own server or a third part
 - `customHeaders` : The custom headers to use for the request.
 `String` content.
 - `requestBuilder` : The request builds the request and return the response. This is a function that takes two `String` parameters code and instruction as input and returns a `Map<String, dynamic>`.
-- `customParser` : A function that parse the json response and returns 
+- `customParser` : A function that parse the json response and returns `String` content.
 
 #### Example of using a custom AI model using TogetherAI:
 

@@ -12,6 +12,7 @@ class CodeCrafterController extends TextEditingController {
   Mode? get language => _language;
 
   String? _langId;
+  int? _lastCursorPosition;
   final Map<int, Set<int>> _highlightIndex = {};
   TextStyle? _highlightStyle;
 
@@ -291,11 +292,23 @@ class CodeCrafterController extends TextEditingController {
           .parse(textBeforeCursor, language: _langId)
           .nodes;
 
-      if (Shared().aiResponse![0] == lastTypedChar) {
+      if (_lastCursorPosition != null &&
+          cursorPosition != _lastCursorPosition) {
+        if (lastTypedChar.trim().isEmpty ||
+            Shared().aiResponse![0] != lastTypedChar) {
+          Shared().aiResponse = null;
+        }
+      }
+
+      if (Shared().aiResponse != null &&
+          Shared().aiResponse!.isNotEmpty &&
+          Shared().aiResponse![0] == lastTypedChar) {
         Shared().aiResponse = Shared().aiResponse!.substring(1);
       } else if (lastTypedChar.trim().isNotEmpty) {
         Shared().aiResponse = null;
       }
+
+      _lastCursorPosition = cursorPosition;
 
       TextSpan aiOverlay = TextSpan(
         text: Shared().aiResponse,

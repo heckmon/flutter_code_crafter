@@ -149,11 +149,11 @@ class _CodeCrafterState extends State<CodeCrafter> {
   Map<String, String> cachedResponse = {};
   Timer? _debounceTimer;
   String _value = '', _hoverDetails = '';
-  int _cursorPosition = 0, _selected = 0;
+  int _selected = 0;
   OverlayEntry? _suggestionOverlay, _detailsOverlay;
   List<dynamic> _suggestions = [];
   List<LspErrors> _diagnostics = [];
-  bool _recentlyTyped = false, _suggestionShown = false;
+  bool _recentlyTyped = false, _suggestionShown = false, _aiSuggestion = false;
   Rect _caretRect = Rect.zero;
   String? content;
 
@@ -256,6 +256,12 @@ class _CodeCrafterState extends State<CodeCrafter> {
       _recentlyTyped = currentText.length > oldVal.length;
       oldVal = currentText;
 
+      if (_aiSuggestion && Shared().aiResponse == null) {
+        setState(() {
+          _aiSuggestion = false;
+        });
+      }
+
       if (widget.lspConfig == null) {
         final RegExp regExp = RegExp(r'\b\w+\b');
         final List<String> words = regExp
@@ -295,7 +301,6 @@ class _CodeCrafterState extends State<CodeCrafter> {
           _hideSuggestionOverlay();
         }
       }
-      _cursorPosition = widget.controller.selection.baseOffset;
       if (widget.lspConfig != null &&
           widget.controller.selection.baseOffset > 0) {
         (() async {
@@ -322,10 +327,7 @@ class _CodeCrafterState extends State<CodeCrafter> {
       if (gutterWidth != Shared().gutterWidth) {
         setState(() => gutterWidth = Shared().gutterWidth);
       }
-      if (_value == widget.controller.text &&
-          _cursorPosition != widget.controller.selection.baseOffset) {
-        Shared().aiResponse = null;
-      }
+
       if (_value != widget.controller.text &&
           (widget.aiCompletion?.enableCompletion ?? false)) {
         final String text = widget.controller.text;
@@ -339,7 +341,7 @@ class _CodeCrafterState extends State<CodeCrafter> {
           Duration(milliseconds: widget.aiCompletion!.debounceTime),
           () async {
             Shared().aiResponse = await _getCachedRsponse(codeToSend);
-            setState(() {});
+            setState(() => _aiSuggestion = true);
           },
         );
         _value = widget.controller.text;
