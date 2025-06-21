@@ -14,20 +14,103 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/foundation.dart';
 
 class CodeCrafter extends StatefulWidget {
+  /// The controller for the CodeCrafter widget.
   final CodeCrafterController controller;
-  final String? initialText, filePath;
-  final TextStyle? textStyle, aiCompletionTextStyle;
-  final Color? cursorColor, selectionColor, selectionHandleColor;
+
+  /// The initial text to be displayed in the [CodeCrafter] widget.
+  ///
+  /// > Note: If both [initialText] and [filePath] are provided, an exception will be thrown.
+  final String? initialText;
+
+  /// Optional but if provided, it will be used to load the initial text from a file.
+  ///
+  /// > Note: If both [initialText] and [filePath] are provided, an exception will be thrown.
+  /// > Note: If [filePath] is provided, the [lspConfig] must also have the same file path. Otherwise, an exception will be thrown.
+  final String? filePath;
+
+  /// The text style to be applied to the text in the [CodeCrafter] widget.
+  final TextStyle? textStyle;
+
+  /// The text style to be applied to the AI completion text in the [CodeCrafter] widget.
+  final TextStyle? aiCompletionTextStyle;
+
+  /// The color of the cursor in the [CodeCrafter] widget.
+  final Color? cursorColor;
+
+  /// The color of the selection in the [CodeCrafter] widget.
+  final Color? selectionColor;
+
+  /// The color of the selection handle in the [CodeCrafter] widget.
+  final Color? selectionHandleColor;
+
+  /// The theme for the editor, which can be used to customize the appearance of the [CodeCrafter] widget.
+  ///
+  /// Use [flutter_highlight](https://pub.dev/packages/flutter_highlight) package to get prebuilt themes.
+  /// > Note: If not provided, syntax highlighting will not work.
   final Map<String, TextStyle>? editorTheme;
+
+  /// tab size for the [CodeCrafter] widget.
+  ///
+  /// Defaults to 3.
+  /// `" " * tabSize` spaces will be inserted when the user presses the tab key.
+  /// This value us also used for indentation in the [CodeCrafter] widget.
   final int tabSize;
+
+  /// The style for the gutter in the [CodeCrafter] widget.
   final GutterStyle? gutterStyle;
-  final bool enableBreakPoints, enableFolding, autoFocus, readOnly;
-  final bool wrapLines, enableRulerLines;
+
+  /// Whether to enable breakpoints in the [CodeCrafter] widget.
+  final bool enableBreakPoints;
+
+  /// Whether to enable folding in the [CodeCrafter] widget.
+  final bool enableFolding;
+
+  /// Whether to enable auto focus on the [CodeCrafter] widget.
+  final bool autoFocus;
+
+  /// Whether the [CodeCrafter] widget is read-only.
+  final bool readOnly;
+
+  /// Whether to wrap lines in the [CodeCrafter] widget.
+  /// Defaults to false.
+  final bool wrapLines;
+
+  /// Whether to enable ruler lines in the [CodeCrafter] widget.
+  /// Defaults to true.
+  final bool enableRulerLines;
+
+  /// Focus node for the underlying [TextField] in the [CodeCrafter] widget.
   final FocusNode? focusNode;
+
+  /// The [CodeCrafter] widget uses [TextField] under the hood,
+  /// So the properties given to this [EditorField] class gets passed to the undelying [TextField] of [CodeCrafter].
+  ///
+  /// Example:
+  /// ```dart
+  /// CodeCrafter(
+  ///  editorField: EditorField(
+  ///   onTap: () {
+  ///    print('Tapped on CodeCrafter');
+  ///  },
+  /// ),
+  /// ```
   final EditorField? editorField;
+
+  /// AI completion configuration for the [CodeCrafter] widget.
+  ///
+  /// Documentation for [AiCompletion] can be found [here](https://github.com/heckmon/flutter_code_crafter/docs/AICompletion.md).
   final AiCompletion? aiCompletion;
+
+  /// LSP configuration for the [CodeCrafter] widget.
+  ///
+  /// Documentation for [LspConfig] can be found [here](https://github.com/heckmon/flutter_code_crafter/docs/LSPClient.md)
   final LspConfig? lspConfig;
-  final OverlayStyle? suggestionStyle, hoverDetailsStyle;
+
+  /// The style for the LSP suggestions overlay.
+  final OverlayStyle? suggestionStyle;
+
+  /// The style for the LSP hover details overlay.
+  final OverlayStyle? hoverDetailsStyle;
   const CodeCrafter({
     super.key,
     required this.controller,
@@ -52,7 +135,7 @@ class CodeCrafter extends StatefulWidget {
     this.autoFocus = false,
     this.readOnly = false,
     this.tabSize = 3,
-    this.editorField
+    this.editorField,
   });
 
   @override
@@ -82,21 +165,21 @@ class _CodeCrafterState extends State<CodeCrafter> {
     _hoverHorizontalScroll = ScrollController();
     _hoverVerticalSCroll = ScrollController();
     widget.controller.text = widget.initialText ?? '';
-    if(widget.lspConfig != null){
-      widget.lspConfig!.responses.listen((data){
-        if(data['method'] == 'textDocument/publishDiagnostics'){
+    if (widget.lspConfig != null) {
+      widget.lspConfig!.responses.listen((data) {
+        if (data['method'] == 'textDocument/publishDiagnostics') {
           final diagnostics = data['params']['diagnostics'] as List;
           _diagnostics.clear();
           Shared().diagnostics.clear();
-          if(diagnostics.isNotEmpty){
+          if (diagnostics.isNotEmpty) {
             final List<LspErrors> errors = [];
-            for(final (item as Map<String, dynamic>) in diagnostics){
+            for (final (item as Map<String, dynamic>) in diagnostics) {
               errors.add(
                 LspErrors(
-                  severity: item['severity'], 
+                  severity: item['severity'],
                   range: item['range'],
-                  message: item['message']
-                )
+                  message: item['message'],
+                ),
               );
             }
             _diagnostics = List.from(errors);
@@ -105,30 +188,47 @@ class _CodeCrafterState extends State<CodeCrafter> {
         }
       });
     }
-    if(widget.filePath != null) {
+    if (widget.filePath != null) {
       (() async {
-         content = await File(widget.filePath!).readAsString();
-         widget.controller.value = TextEditingValue(
-            text: content ?? '',
-            selection: TextSelection.collapsed(offset: content?.length ?? 0)
-          );
+        content = await File(widget.filePath!).readAsString();
+        widget.controller.value = TextEditingValue(
+          text: content ?? '',
+          selection: TextSelection.collapsed(offset: content?.length ?? 0),
+        );
       })();
     }
-    if(kIsWeb){
-      if(widget.filePath != null) throw PlatformException(code: "\nERROR\n" ,message: "The parameter filePath is not supported on web. Please remove it.\n");
-      if(widget.lspConfig != null) throw PlatformException(code:"\nERROR\n" ,message: "LSP is not supported on web in the current version; support may be added in the future\n");
-    }
-    if(widget.initialText != null && widget.filePath != null) {
-      throw Exception('Initial text and file path cannot be both provided. Please provide either initialText or filePath.');
-    }
-    if(widget.lspConfig != null){
-      if((widget.lspConfig!.filePath != widget.filePath) || widget.filePath == null){ 
-        throw Exception('File path in LspConfig does not match the provided filePath in CodeCrafter.');
+    if (kIsWeb) {
+      if (widget.filePath != null) {
+        throw PlatformException(
+          code: "\nERROR\n",
+          message:
+              "The parameter filePath is not supported on web. Please remove it.\n",
+        );
       }
-      (() async{
+      if (widget.lspConfig != null) {
+        throw PlatformException(
+          code: "\nERROR\n",
+          message:
+              "LSP is not supported on web in the current version; support may be added in the future\n",
+        );
+      }
+    }
+    if (widget.initialText != null && widget.filePath != null) {
+      throw Exception(
+        'Initial text and file path cannot be both provided. Please provide either initialText or filePath.',
+      );
+    }
+    if (widget.lspConfig != null) {
+      if ((widget.lspConfig!.filePath != widget.filePath) ||
+          widget.filePath == null) {
+        throw Exception(
+          'File path in LspConfig does not match the provided filePath in CodeCrafter.',
+        );
+      }
+      (() async {
         try {
-          if(widget.lspConfig is LspSocketConfig){
-            await (widget.lspConfig as LspSocketConfig).connect();  
+          if (widget.lspConfig is LspSocketConfig) {
+            await (widget.lspConfig as LspSocketConfig).connect();
           }
           await widget.lspConfig!.initialize();
           await widget.lspConfig!.openDocument();
@@ -151,14 +251,17 @@ class _CodeCrafterState extends State<CodeCrafter> {
       final cursorOffset = widget.controller.selection.baseOffset;
       final lines = currentText.substring(0, cursorOffset).split('\n');
       final line = lines.length - 1;
-      final prefix = _getCurrentWordPrefix(currentText,  cursorOffset);
+      final prefix = _getCurrentWordPrefix(currentText, cursorOffset);
       final character = lines.isNotEmpty ? lines.last.length : 0;
       _recentlyTyped = currentText.length > oldVal.length;
       oldVal = currentText;
 
-      if(widget.lspConfig == null){
+      if (widget.lspConfig == null) {
         final RegExp regExp = RegExp(r'\b\w+\b');
-        final List<String> words = regExp.allMatches(widget.controller.text).map((m) => m.group(0)!).toList();
+        final List<String> words = regExp
+            .allMatches(widget.controller.text)
+            .map((m) => m.group(0)!)
+            .toList();
         String currentWord = '';
         if (widget.controller.text.isNotEmpty) {
           final match = RegExp(r'\w+$').firstMatch(widget.controller.text);
@@ -175,7 +278,9 @@ class _CodeCrafterState extends State<CodeCrafter> {
         }
 
         if (prefix.isNotEmpty) {
-          _suggestions = _suggestions.where((s) => s.startsWith(prefix)).toList();
+          _suggestions = _suggestions
+              .where((s) => s.startsWith(prefix))
+              .toList();
         }
 
         if (_recentlyTyped && _suggestions.isNotEmpty && cursorOffset > 0) {
@@ -190,38 +295,43 @@ class _CodeCrafterState extends State<CodeCrafter> {
           _hideSuggestionOverlay();
         }
       }
-    _cursorPosition = widget.controller.selection.baseOffset;
-      if(widget.lspConfig != null && widget.controller.selection.baseOffset > 0) {
-        (() async{
+      _cursorPosition = widget.controller.selection.baseOffset;
+      if (widget.lspConfig != null &&
+          widget.controller.selection.baseOffset > 0) {
+        (() async {
           await widget.lspConfig!.updateDocument(widget.controller.text);
-          final List<LspCompletion> suggestion = await widget.lspConfig!.getCompletions(line, character);
+          final List<LspCompletion> suggestion = await widget.lspConfig!
+              .getCompletions(line, character);
           _hoverDetails = await widget.lspConfig!.getHover(line, character);
           if (_recentlyTyped && suggestion.isNotEmpty && cursorOffset > 0) {
             _suggestions = suggestion;
             _selected = 0;
             _sortSuggestions(prefix);
             final triggerChar = currentText[cursorOffset - 1];
-            if(!RegExp(r'[a-zA-Z._$]').hasMatch(triggerChar)) {
+            if (!RegExp(r'[a-zA-Z._$]').hasMatch(triggerChar)) {
               _hideSuggestionOverlay();
               return;
             }
-            if(mounted) _showSuggestionOverlay();
+            if (mounted) _showSuggestionOverlay();
           } else {
             _hideSuggestionOverlay();
           }
         })();
       }
 
-      if(gutterWidth != Shared().gutterWidth) {
+      if (gutterWidth != Shared().gutterWidth) {
         setState(() => gutterWidth = Shared().gutterWidth);
       }
-      if(_value == widget.controller.text && _cursorPosition != widget.controller.selection.baseOffset){
+      if (_value == widget.controller.text &&
+          _cursorPosition != widget.controller.selection.baseOffset) {
         Shared().aiResponse = null;
       }
-      if(_value != widget.controller.text && (widget.aiCompletion?.enableCompletion ?? false)){
+      if (_value != widget.controller.text &&
+          (widget.aiCompletion?.enableCompletion ?? false)) {
         final String text = widget.controller.text;
         final int cursorPosition = widget.controller.selection.baseOffset;
-        final String codeToSend = "${text.substring(0, cursorPosition)}<|CURSOR|>${text.substring(cursorPosition)}";
+        final String codeToSend =
+            "${text.substring(0, cursorPosition)}<|CURSOR|>${text.substring(cursorPosition)}";
 
         _debounceTimer?.cancel();
 
@@ -230,12 +340,10 @@ class _CodeCrafterState extends State<CodeCrafter> {
           () async {
             Shared().aiResponse = await _getCachedRsponse(codeToSend);
             setState(() {});
-          }
-
+          },
         );
         _value = widget.controller.text;
       }
-
     });
     super.initState();
   }
@@ -268,18 +376,16 @@ class _CodeCrafterState extends State<CodeCrafter> {
 
   void _sortSuggestions(String prefix) {
     _suggestions.sort((a, b) {
-      final aStartsWith = a is LspCompletion ? 
-          a.label.toLowerCase().startsWith(prefix.toLowerCase())
+      final aStartsWith = a is LspCompletion
+          ? a.label.toLowerCase().startsWith(prefix.toLowerCase())
           : a.toLowerCase().startsWith(prefix.toLowerCase());
-      final bStartsWith = b is LspCompletion ? 
-          b.label.toLowerCase().startsWith(prefix.toLowerCase())
+      final bStartsWith = b is LspCompletion
+          ? b.label.toLowerCase().startsWith(prefix.toLowerCase())
           : b.toLowerCase().startsWith(prefix.toLowerCase());
       if (aStartsWith && !bStartsWith) return -1;
       if (!aStartsWith && bStartsWith) return 1;
 
-      return a is LspCompletion
-      ? b.label.compareTo(a.label)
-      : b.compareTo(a);
+      return a is LspCompletion ? b.label.compareTo(a.label) : b.compareTo(a);
     });
   }
 
@@ -299,9 +405,18 @@ class _CodeCrafterState extends State<CodeCrafter> {
   }
 
   bool _isWordBoundary(String char) {
-    return char == ' ' || char == '\n' || char == '\t' || char == '(' || 
-          char == ')' || char == '{' || char == '}' || char == ';' || 
-          char == ',' || char == '.' || char == '"' || char == '\'';
+    return char == ' ' ||
+        char == '\n' ||
+        char == '\t' ||
+        char == '(' ||
+        char == ')' ||
+        char == '{' ||
+        char == '}' ||
+        char == ';' ||
+        char == ',' ||
+        char == '.' ||
+        char == '"' ||
+        char == '\'';
   }
 
   void _hideSuggestionOverlay() {
@@ -331,7 +446,6 @@ class _CodeCrafterState extends State<CodeCrafter> {
     root.visitChildElements(visitor);
     return result;
   }
-
 
   Rect _globalCaretRect() {
     final ctx = _codeFocus.context;
@@ -365,35 +479,39 @@ class _CodeCrafterState extends State<CodeCrafter> {
     final double screenWidth = MediaQuery.of(context).size.width;
     const double overlayWidth = 250.0, maxOverlayHeight = 300.0;
     const int gap = 4;
-    final bool showAbove = caretGlobal.bottom + gap + maxOverlayHeight > screenHeight;
+    final bool showAbove =
+        caretGlobal.bottom + gap + maxOverlayHeight > screenHeight;
     final bool showLeft = caretGlobal.left + overlayWidth > screenWidth;
 
     final double top = showAbove
-      ? caretGlobal.top - gap - maxOverlayHeight
-      : caretGlobal.bottom + gap;
+        ? caretGlobal.top - gap - maxOverlayHeight
+        : caretGlobal.bottom + gap;
 
     final double left = showLeft
-      ? caretGlobal.left - overlayWidth + caretGlobal.width
-      : caretGlobal.left;
+        ? caretGlobal.left - overlayWidth + caretGlobal.width
+        : caretGlobal.left;
 
     _suggestionOverlay = OverlayEntry(
       builder: (ctx) => Positioned(
         left: left,
-        top:  top,
+        top: top,
         width: overlayWidth,
         child: ConstrainedBox(
-          constraints: BoxConstraints(
-            maxHeight: maxOverlayHeight,
-          ),
+          constraints: BoxConstraints(maxHeight: maxOverlayHeight),
           child: Card(
             elevation: widget.suggestionStyle?.elevation ?? 6,
-            color: widget.suggestionStyle?.backgroundColor ?? widget.editorTheme?['root']?.backgroundColor?.withAlpha(220)  ?? Colors.black87,
-            shape: widget.suggestionStyle?.shape ?? BeveledRectangleBorder(
-              side: BorderSide(
-                color: Shared().theme['root']?.color ?? Colors.white,
-                width: 0.2,
-              ),
-            ),
+            color:
+                widget.suggestionStyle?.backgroundColor ??
+                widget.editorTheme?['root']?.backgroundColor?.withAlpha(220) ??
+                Colors.black87,
+            shape:
+                widget.suggestionStyle?.shape ??
+                BeveledRectangleBorder(
+                  side: BorderSide(
+                    color: Shared().theme['root']?.color ?? Colors.white,
+                    width: 0.2,
+                  ),
+                ),
             child: Focus(
               child: ListView.builder(
                 itemExtent: (widget.textStyle?.fontSize ?? 14) + 5,
@@ -403,28 +521,47 @@ class _CodeCrafterState extends State<CodeCrafter> {
                   return InkWell(
                     autofocus: true,
                     focusNode: _selected == i ? _suggestionFocus : null,
-                    focusColor: widget.suggestionStyle?.focusColor ?? Colors.blueAccent.withAlpha(50),
-                    hoverColor: widget.suggestionStyle?.hoverColor ?? Colors.grey.withAlpha(15),
-                    splashColor: widget.suggestionStyle?.splashColor ?? Colors.blueAccent.withAlpha(50),
+                    focusColor:
+                        widget.suggestionStyle?.focusColor ??
+                        Colors.blueAccent.withAlpha(50),
+                    hoverColor:
+                        widget.suggestionStyle?.hoverColor ??
+                        Colors.grey.withAlpha(15),
+                    splashColor:
+                        widget.suggestionStyle?.splashColor ??
+                        Colors.blueAccent.withAlpha(50),
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 3),
                       child: Row(
                         children: [
-                          _suggestions[i] is LspCompletion ? _suggestions[i].icon : const SizedBox(),
+                          _suggestions[i] is LspCompletion
+                              ? _suggestions[i].icon
+                              : const SizedBox(),
                           const SizedBox(width: 6),
                           Text(
-                            _suggestions[i] is LspCompletion ? _suggestions[i].label : _suggestions[i],
+                            _suggestions[i] is LspCompletion
+                                ? _suggestions[i].label
+                                : _suggestions[i],
                             overflow: TextOverflow.ellipsis,
-                            style: widget.suggestionStyle?.textStyle ?? TextStyle(
-                              color: widget.editorTheme?['root']?.color ?? Colors.white,
-                              fontSize: (widget.textStyle?.fontSize ?? 14) - 2,
-                            ),
+                            style:
+                                widget.suggestionStyle?.textStyle ??
+                                TextStyle(
+                                  color:
+                                      widget.editorTheme?['root']?.color ??
+                                      Colors.white,
+                                  fontSize:
+                                      (widget.textStyle?.fontSize ?? 14) - 2,
+                                ),
                           ),
                         ],
                       ),
                     ),
                     onTap: () {
-                      _insertSuggestion(_suggestions[i] is LspCompletion ? _suggestions[i].label : _suggestions[i]);
+                      _insertSuggestion(
+                        _suggestions[i] is LspCompletion
+                            ? _suggestions[i].label
+                            : _suggestions[i],
+                      );
                       _selected = i;
                       _hideSuggestionOverlay();
                       _codeFocus.requestFocus();
@@ -441,31 +578,33 @@ class _CodeCrafterState extends State<CodeCrafter> {
     overlay.insert(_suggestionOverlay!);
   }
 
-  void _showDetailsOverlay(){
+  void _showDetailsOverlay() {
     _hideDetailsOverlay();
-    if(_hoverDetails.isEmpty && _codeFocus.hasFocus) return;
+    if (_hoverDetails.isEmpty && _codeFocus.hasFocus) return;
     final OverlayState overlay = Overlay.of(context);
     final Rect caretGlobal = _globalCaretRect();
     final double screenHeight = MediaQuery.of(context).size.height;
     final double screenWidth = MediaQuery.of(context).size.width;
     const double overlayWidth = 250.0, maxOverlayHeight = 300.0;
     const int gap = 4;
-    final bool showAbove = caretGlobal.bottom + gap + maxOverlayHeight > screenHeight;
+    final bool showAbove =
+        caretGlobal.bottom + gap + maxOverlayHeight > screenHeight;
     final bool showLeft = caretGlobal.left + overlayWidth > screenWidth;
 
-    final Map<String, int> cursorInfo = widget.controller.getCursorLineAndChar();
+    final Map<String, int> cursorInfo = widget.controller
+        .getCursorLineAndChar();
     final int cursorLine = cursorInfo['line']!;
     final int cursorChar = cursorInfo['character']!;
 
     final error = _getErrorAtPosition(cursorLine, cursorChar);
 
     final double top = showAbove
-      ? caretGlobal.top - gap - maxOverlayHeight
-      : caretGlobal.bottom + gap;
+        ? caretGlobal.top - gap - maxOverlayHeight
+        : caretGlobal.bottom + gap;
 
     final double left = showLeft
-      ? caretGlobal.left - overlayWidth + caretGlobal.width
-      : caretGlobal.left;
+        ? caretGlobal.left - overlayWidth + caretGlobal.width
+        : caretGlobal.left;
 
     _detailsOverlay = OverlayEntry(
       builder: (ctx) => Positioned(
@@ -473,21 +612,25 @@ class _CodeCrafterState extends State<CodeCrafter> {
         top: top,
         width: overlayWidth,
         child: ConstrainedBox(
-          constraints: BoxConstraints(
-            maxHeight: maxOverlayHeight
-          ),
+          constraints: BoxConstraints(maxHeight: maxOverlayHeight),
           child: Card(
             elevation: widget.hoverDetailsStyle?.elevation ?? 6,
-            color: widget.hoverDetailsStyle?.backgroundColor ?? widget.editorTheme?['root']?.backgroundColor?.withAlpha(220)  ?? Colors.black87,
-            shape: widget.hoverDetailsStyle?.shape ?? BeveledRectangleBorder(
-              side: BorderSide(
-                  color: widget.editorTheme?['root']?.color ?? Colors.white,
-                  width: 0.2,
+            color:
+                widget.hoverDetailsStyle?.backgroundColor ??
+                widget.editorTheme?['root']?.backgroundColor?.withAlpha(220) ??
+                Colors.black87,
+            shape:
+                widget.hoverDetailsStyle?.shape ??
+                BeveledRectangleBorder(
+                  side: BorderSide(
+                    color: widget.editorTheme?['root']?.color ?? Colors.white,
+                    width: 0.2,
+                  ),
                 ),
-              ),
             child: RawScrollbar(
               thumbVisibility: true,
-              thumbColor: (widget.editorTheme?['root']?.color ?? Colors.white).withAlpha(35),
+              thumbColor: (widget.editorTheme?['root']?.color ?? Colors.white)
+                  .withAlpha(35),
               controller: _hoverHorizontalScroll,
               child: SingleChildScrollView(
                 controller: _hoverHorizontalScroll,
@@ -502,18 +645,21 @@ class _CodeCrafterState extends State<CodeCrafter> {
                       padding: const EdgeInsets.all(8.0),
                       child: Text(
                         error == null ? _hoverDetails : error.message,
-                        style: widget.hoverDetailsStyle?.textStyle ?? TextStyle(
-                          color: Shared().theme['root']?.color ?? Colors.white
-                        )
+                        style:
+                            widget.hoverDetailsStyle?.textStyle ??
+                            TextStyle(
+                              color:
+                                  Shared().theme['root']?.color ?? Colors.white,
+                            ),
                       ),
-                    )
+                    ),
                   ),
                 ),
               ),
             ),
           ),
-        )
-      )
+        ),
+      ),
     );
     overlay.insert(_detailsOverlay!);
   }
@@ -527,8 +673,9 @@ class _CodeCrafterState extends State<CodeCrafter> {
       final endLine = end['line'] as int;
       final endChar = end['character'] as int;
 
-      final inRange = (line > startLine || (line == startLine && character >= startChar)) &&
-                      (line < endLine || (line == endLine && character < endChar));
+      final inRange =
+          (line > startLine || (line == startLine && character >= startChar)) &&
+          (line < endLine || (line == endLine && character < endChar));
       if (inRange) {
         return error;
       }
@@ -536,12 +683,13 @@ class _CodeCrafterState extends State<CodeCrafter> {
     return null;
   }
 
-  Future<String> _getCachedRsponse(String codeToSend) async{
+  Future<String> _getCachedRsponse(String codeToSend) async {
     final String key = codeToSend.hashCode.toString();
-    if(cachedResponse.containsKey(key)){
+    if (cachedResponse.containsKey(key)) {
       return cachedResponse[key]!;
     }
-    final String aiResponse = await widget.aiCompletion!.model.completionResponse(codeToSend);
+    final String aiResponse = await widget.aiCompletion!.model
+        .completionResponse(codeToSend);
     cachedResponse[key] = aiResponse;
     return aiResponse;
   }
@@ -549,14 +697,14 @@ class _CodeCrafterState extends State<CodeCrafter> {
   @override
   Widget build(BuildContext context) {
     final EditorField? editorField = widget.editorField?.copyWith(
-      onTap: (){
+      onTap: () {
         _showDetailsOverlay();
         widget.editorField?.onTap?.call();
-      }
+      },
     );
     return LayoutBuilder(
       builder: (context, constraints) {
-         WidgetsBinding.instance.addPostFrameCallback((_) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
           final rect = _globalCaretRect();
           if (rect != _caretRect) setState(() => _caretRect = rect);
         });
@@ -568,7 +716,9 @@ class _CodeCrafterState extends State<CodeCrafter> {
               GestureDetector(
                 onTap: () => _codeFocus.requestFocus(),
                 child: Container(
-                  color: widget.editorTheme?['root']?.backgroundColor ?? Colors.black,
+                  color:
+                      widget.editorTheme?['root']?.backgroundColor ??
+                      Colors.black,
                 ),
               ),
               SingleChildScrollView(
@@ -576,114 +726,150 @@ class _CodeCrafterState extends State<CodeCrafter> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Gutter(
-                      widget.gutterStyle ?? GutterStyle(
-                        foldedIconColor: widget.editorTheme?['root']?.color ?? Colors.grey,
-                        unfoldedIconColor: widget.editorTheme?['root']?.color ?? Colors.grey,
-                      ),
+                      widget.gutterStyle ??
+                          GutterStyle(
+                            foldedIconColor:
+                                widget.editorTheme?['root']?.color ??
+                                Colors.grey,
+                            unfoldedIconColor:
+                                widget.editorTheme?['root']?.color ??
+                                Colors.grey,
+                          ),
                       widget.enableBreakPoints,
-                      widget.enableFolding
+                      widget.enableFolding,
                     ),
                     Expanded(
                       child: KeyboardListener(
                         focusNode: _keyboardFocus,
-                        onKeyEvent: (value){
-                          if(value is KeyDownEvent){
-
-                            if(value.logicalKey == LogicalKeyboardKey.escape){
-                              if(_suggestionShown){
+                        onKeyEvent: (value) {
+                          if (value is KeyDownEvent) {
+                            if (value.logicalKey == LogicalKeyboardKey.escape) {
+                              if (_suggestionShown) {
                                 _suggestionFocus.unfocus();
                                 _hideSuggestionOverlay();
                                 _codeFocus.requestFocus();
                               }
                             }
 
-                            if(value.logicalKey == LogicalKeyboardKey.arrowUp){
-                              if(_suggestionShown){
+                            if (value.logicalKey ==
+                                LogicalKeyboardKey.arrowUp) {
+                              if (_suggestionShown) {
                                 setState(() => _selected--);
                                 _suggestionFocus.requestFocus();
                               }
                             }
 
-                            if(value.logicalKey == LogicalKeyboardKey.arrowDown){
-                              if(_suggestionShown){
+                            if (value.logicalKey ==
+                                LogicalKeyboardKey.arrowDown) {
+                              if (_suggestionShown) {
                                 setState(() => _selected++);
                                 _suggestionFocus.requestFocus();
                               }
                             }
 
-                            if(value.logicalKey == LogicalKeyboardKey.enter){
-                              if(_suggestionShown) _suggestionFocus.requestFocus();
+                            if (value.logicalKey == LogicalKeyboardKey.enter) {
+                              if (_suggestionShown) {
+                                _suggestionFocus.requestFocus();
+                              }
                             }
 
-                            if(value.logicalKey == LogicalKeyboardKey.tab){
-                              if(!widget.wrapLines) {
+                            if (value.logicalKey == LogicalKeyboardKey.tab) {
+                              if (!widget.wrapLines) {
                                 _codeFocus.requestFocus();
                                 return;
                               }
-                              int cursorPosition = widget.controller.selection.baseOffset;
+                              int cursorPosition =
+                                  widget.controller.selection.baseOffset;
                               String currText = widget.controller.text;
                               _keyboardFocus.previousFocus();
                               widget.controller.value = TextEditingValue(
-                                text: currText.replaceRange(cursorPosition, cursorPosition, ' ' * widget.tabSize),
-                                selection: TextSelection.collapsed(offset: cursorPosition + widget.tabSize)
+                                text: currText.replaceRange(
+                                  cursorPosition,
+                                  cursorPosition,
+                                  ' ' * widget.tabSize,
+                                ),
+                                selection: TextSelection.collapsed(
+                                  offset: cursorPosition + widget.tabSize,
+                                ),
                               );
                               return;
                             }
                           }
-                        } ,
+                        },
                         child: Theme(
                           data: ThemeData(
                             textSelectionTheme: TextSelectionThemeData(
                               selectionColor: widget.selectionColor,
-                              selectionHandleColor: widget.selectionHandleColor
-                            )
+                              selectionHandleColor: widget.selectionHandleColor,
+                            ),
                           ),
                           child: SingleChildScrollView(
                             scrollDirection: Axis.horizontal,
                             child: SizedBox(
-                              width: widget.wrapLines ? constraints.maxWidth - gutterWidth : double.maxFinite,
-                              child: editorField?.build(
-                                controller: widget.controller,
-                                focusNode: _codeFocus,
-                                autofocus: widget.autoFocus,
-                                readOnly: widget.readOnly,
-                                fallbackStyle: widget.textStyle,
-                                fallbackCursorColor: widget.cursorColor,
-                                editorTheme: widget.editorTheme,
-                              ) ?? TextField(
-                                onTap: () {
-                                  _showDetailsOverlay();
-                                },
-                                controller: widget.controller,
-                                focusNode: _codeFocus,
-                                autofocus: widget.autoFocus,
-                                readOnly: widget.readOnly,
-                                scrollPhysics: const NeverScrollableScrollPhysics(),
-                                keyboardType: TextInputType.multiline,
-                                decoration: const InputDecoration(
-                                  isCollapsed: true,
-                                  border: InputBorder.none,
-                                ),
-                                maxLines: null,
-                                showCursor: true,
-                                style: widget.textStyle ?? const TextStyle(height: 1.5, fontSize: 14),
-                                cursorHeight: widget.textStyle?.fontSize ?? 14,
-                                cursorColor: widget.cursorColor ?? widget.editorTheme?['root']?.color ?? Colors.white,
-                                cursorWidth: 2,
-                              ),
+                              width: widget.wrapLines
+                                  ? constraints.maxWidth - gutterWidth
+                                  : double.maxFinite,
+                              child:
+                                  editorField?.build(
+                                    controller: widget.controller,
+                                    focusNode: _codeFocus,
+                                    autofocus: widget.autoFocus,
+                                    readOnly: widget.readOnly,
+                                    fallbackStyle: widget.textStyle,
+                                    fallbackCursorColor: widget.cursorColor,
+                                    editorTheme: widget.editorTheme,
+                                  ) ??
+                                  TextField(
+                                    onTap: () {
+                                      _showDetailsOverlay();
+                                    },
+                                    controller: widget.controller,
+                                    focusNode: _codeFocus,
+                                    autofocus: widget.autoFocus,
+                                    readOnly: widget.readOnly,
+                                    scrollPhysics:
+                                        const NeverScrollableScrollPhysics(),
+                                    keyboardType: TextInputType.multiline,
+                                    decoration: const InputDecoration(
+                                      isCollapsed: true,
+                                      border: InputBorder.none,
+                                    ),
+                                    maxLines: null,
+                                    showCursor: true,
+                                    style:
+                                        widget.textStyle ??
+                                        const TextStyle(
+                                          height: 1.5,
+                                          fontSize: 14,
+                                        ),
+                                    cursorHeight:
+                                        widget.textStyle?.fontSize ?? 14,
+                                    cursorColor:
+                                        widget.cursorColor ??
+                                        widget.editorTheme?['root']?.color ??
+                                        Colors.white,
+                                    cursorWidth: 2,
+                                  ),
                             ),
-                          )
+                          ),
                         ),
                       ),
                     ),
                   ],
                 ),
               ),
-              if(widget.aiCompletion != null && widget.aiCompletion!.enableCompletion && Shared().aiResponse != null && Shared().aiResponse!.isNotEmpty)
+              if (widget.aiCompletion != null &&
+                  widget.aiCompletion!.enableCompletion &&
+                  Shared().aiResponse != null &&
+                  Shared().aiResponse!.isNotEmpty)
                 Positioned(
                   left: _caretRect.left,
                   right: _caretRect.right,
-                  top: _caretRect.top + _caretRect.height + (Shared().aiResponse!.split('\n').length * (widget.textStyle?.fontSize ?? 14)),
+                  top:
+                      _caretRect.top +
+                      _caretRect.height +
+                      (Shared().aiResponse!.split('\n').length *
+                          (widget.textStyle?.fontSize ?? 14)),
                   child: Row(
                     children: [
                       SizedBox(
@@ -691,21 +877,33 @@ class _CodeCrafterState extends State<CodeCrafter> {
                         height: _caretRect.height,
                         child: TextButton(
                           style: ButtonStyle(
-                            shape: WidgetStatePropertyAll(RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(3),
-                              side: BorderSide(color: Colors.white, width: 0.2),
-                            )),
-                            backgroundColor: WidgetStatePropertyAll(Colors.blueAccent),
-                            foregroundColor: WidgetStatePropertyAll(Colors.white),
+                            shape: WidgetStatePropertyAll(
+                              RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(3),
+                                side: BorderSide(
+                                  color: Colors.white,
+                                  width: 0.2,
+                                ),
+                              ),
+                            ),
+                            backgroundColor: WidgetStatePropertyAll(
+                              Colors.blueAccent,
+                            ),
+                            foregroundColor: WidgetStatePropertyAll(
+                              Colors.white,
+                            ),
                           ),
-                          onPressed: (){
+                          onPressed: () {
                             setState(() {
                               _insertSuggestion(Shared().aiResponse!);
                               Future.delayed(Duration.zero);
                               Shared().aiResponse = null;
                             });
-                          }, 
-                          child: const Text("Accept",style: TextStyle(fontSize: 9))
+                          },
+                          child: const Text(
+                            "Accept",
+                            style: TextStyle(fontSize: 9),
+                          ),
                         ),
                       ),
                       const SizedBox(width: 5),
@@ -714,23 +912,37 @@ class _CodeCrafterState extends State<CodeCrafter> {
                         height: _caretRect.height,
                         child: TextButton(
                           style: ButtonStyle(
-                            shape: WidgetStatePropertyAll(RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(3),
-                              side: BorderSide(color: Colors.white, width: 0.2),
-                            )),
-                            backgroundColor: WidgetStatePropertyAll(Colors.blueAccent),
-                            foregroundColor: WidgetStatePropertyAll(Colors.white),
+                            shape: WidgetStatePropertyAll(
+                              RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(3),
+                                side: BorderSide(
+                                  color: Colors.white,
+                                  width: 0.2,
+                                ),
+                              ),
+                            ),
+                            backgroundColor: WidgetStatePropertyAll(
+                              Colors.blueAccent,
+                            ),
+                            foregroundColor: WidgetStatePropertyAll(
+                              Colors.white,
+                            ),
                           ),
-                          onPressed: () => setState(() => Shared().aiResponse = null),
-                          child: const Text("Reject", style: TextStyle(fontSize: 9))),
+                          onPressed: () =>
+                              setState(() => Shared().aiResponse = null),
+                          child: const Text(
+                            "Reject",
+                            style: TextStyle(fontSize: 9),
+                          ),
+                        ),
                       ),
                     ],
-                  )
+                  ),
                 ),
             ],
           ),
         );
-      }
+      },
     );
   }
 }

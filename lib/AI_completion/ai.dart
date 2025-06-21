@@ -3,38 +3,80 @@ import 'dart:io';
 import 'package:meta/meta.dart';
 import 'package:http/http.dart' as http;
 
-class AiCompletion{
+/// A class that provides AI completion functionality.
+/// Click here for documentation: [AICompletion](https://github.com/heckmon/flutter_code_crafter/docs/AICompletion.md)
+///
+/// Example usage:
+///
+/// ```dart
+///import 'package:flutter/material.dart';
+///import 'package:code_crafter/code_crafter.dart';
+
+///final aiCompletion = AiCompletion(
+///    model: Gemini(
+///        apiKey: "Your API Key",
+///    )
+///)
+///```
+///
+///Then pass the `aiCompletion` instance to the `CodeCrafter` widget:
+///
+///```dart
+///CodeCrafter(
+///    controller: controller,
+///    theme: anOldHopeTheme,
+///    aiCompletion: aiCompletion, // Pass the AI completion instance here
+///),
+///```
+///
+class AiCompletion {
+  /// The model to use for AI completion.
+  ///
+  /// This should be an instance of a class that extends [Models].
+  /// Documentation and available models can be found here: [AICompletion](https://github.com/heckmon/flutter_code_crafter/docs/AICompletion.md)
   Models model;
+
+  /// Whether to enable AI completion. Defaults to true.
   bool enableCompletion;
+
+  /// The debounce time in milliseconds for AI completion requests. Defaults to 1000ms.
   int debounceTime;
-  
+
   AiCompletion({
     required this.model,
     this.debounceTime = 1000,
-    this.enableCompletion =true
+    this.enableCompletion = true,
   });
 }
 
-sealed class Models{
-  @protected String get url;
+sealed class Models {
+  @protected
+  String get url;
   String? get apiKey;
   String? get model;
   Map<String, String> get headers;
 
   @protected
-  final String instruction = "You are a code completion engine. Given the provided code where the cursor is represented by the placeholder '<|CURSOR|>', generate only the code that should be inserted at that position. Do not include the placeholder or any explanations. Return only the code to insert.";
+  final String instruction =
+      "You are a code completion engine. Given the provided code where the cursor is represented by the placeholder '<|CURSOR|>', generate only the code that should be inserted at that position. Do not include the placeholder or any explanations. Return only the code to insert.";
 
   Map<String, dynamic> buildRequest(String code);
-  
+
   String responseParser(dynamic response);
 
-  Future<String> completionResponse(String code) async{
+  Future<String> completionResponse(String code) async {
     final uri = Uri.parse(url);
-    final response = await http.post(uri, headers: headers, body: jsonEncode(buildRequest(code)));
-    if(response.statusCode == 200){
+    final response = await http.post(
+      uri,
+      headers: headers,
+      body: jsonEncode(buildRequest(code)),
+    );
+    if (response.statusCode == 200) {
       return _cleanCode(responseParser(jsonDecode(response.body)));
     }
-    throw HttpException("Failed to load AI suggestion \nStatus code: ${response.statusCode}\n error: ${response.body}");
+    throw HttpException(
+      "Failed to load AI suggestion \nStatus code: ${response.statusCode}\n error: ${response.body}",
+    );
   }
 
   @protected
@@ -47,17 +89,18 @@ sealed class Models{
 
     return raw.trim();
   }
-
 }
 
-sealed class OpenAiCompatible extends Models{
+sealed class OpenAiCompatible extends Models {
   String get baseUrl;
-  @protected @override String get url => "$baseUrl/chat/completions";
+  @protected
+  @override
+  String get url => "$baseUrl/chat/completions";
 
   @override
   Map<String, String> get headers => {
     "Content-Type": "application/json",
-    "Authorization": "Bearer $apiKey"
+    "Authorization": "Bearer $apiKey",
   };
 
   @override
@@ -65,15 +108,9 @@ sealed class OpenAiCompatible extends Models{
     return {
       "model": model,
       "messages": [
-        {
-          "role": "system",
-          "content" : instruction
-        },
-        {
-          "role": "user",
-          "content": code
-          }
-      ]
+        {"role": "system", "content": instruction},
+        {"role": "user", "content": code},
+      ],
     };
   }
 
@@ -82,33 +119,40 @@ sealed class OpenAiCompatible extends Models{
     try {
       return response["choices"][0]["message"]["content"];
     } catch (e) {
-      throw FormatException("Failed to parse AI response: $e \nResponse: $response");
+      throw FormatException(
+        "Failed to parse AI response: $e \nResponse: $response",
+      );
     }
   }
 }
 
+/// Goole Gemini AI model implementation.
 class Gemini extends Models {
-  @override final String url, apiKey, model;
+  @override
+  final String url, apiKey, model;
   @override
   Map<String, String> get headers => {'Content-Type': 'application/json'};
   int? temperature, maxOutputTokens, topP, topK, stopSequences;
 
   Gemini({
-      required this.apiKey,
-      this.model = 'gemini-2.0-flash',
-      this.temperature,
-      this.maxOutputTokens,
-      this.topP,
-      this.topK,
-      this.stopSequences,
-    }):url = 'https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent?key=$apiKey';
+    required this.apiKey,
+    this.model = 'gemini-2.0-flash',
+    this.temperature,
+    this.maxOutputTokens,
+    this.topP,
+    this.topK,
+    this.stopSequences,
+  }) : url =
+           'https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent?key=$apiKey';
 
   @override
   String responseParser(dynamic response) {
     try {
       return response["candidates"][0]["content"]["parts"][0]["text"];
     } catch (e) {
-      throw FormatException("Failed to parse AI response: $e \nResponse: $response");
+      throw FormatException(
+        "Failed to parse AI response: $e \nResponse: $response",
+      );
     }
   }
 
@@ -117,36 +161,31 @@ class Gemini extends Models {
     return {
       "systemInstruction": {
         "parts": [
-          {
-            "text": instruction
-
-          }
-        ]
+          {"text": instruction},
+        ],
       },
-      "contents" : [
+      "contents": [
         {
-          "parts":[
-            {
-              "text": code
-            }
-          ]
+          "parts": [
+            {"text": code},
+          ],
         },
       ],
       "generationConfig": {
-        "stopSequences": [
-          "Title"
-        ],
+        "stopSequences": ["Title"],
         "temperature": temperature ?? 1.0,
         "maxOutputTokens": maxOutputTokens ?? 800,
         "topP": topP ?? 0.8,
-        "topK": topK ?? 10
-      }
+        "topK": topK ?? 10,
+      },
     };
   }
 }
 
+/// OpenAI AI model implementation.
 class OpenAI extends Models {
-  @override final String url = 'https://api.openai.com/v1/responses', apiKey, model;
+  @override
+  final String url = 'https://api.openai.com/v1/responses', apiKey, model;
 
   OpenAI({required this.apiKey, required this.model});
 
@@ -155,7 +194,9 @@ class OpenAI extends Models {
     try {
       return response[0]["content"][0]["text"];
     } catch (e) {
-      throw FormatException("Failed to parse AI response: $e \nResponse: $response");
+      throw FormatException(
+        "Failed to parse AI response: $e \nResponse: $response",
+      );
     }
   }
 
@@ -167,16 +208,14 @@ class OpenAI extends Models {
 
   @override
   Map<String, dynamic> buildRequest(String code) {
-    return {
-      "model": model,
-      "instructions": instruction,
-      "input": code,
-    };
+    return {"model": model, "instructions": instruction, "input": code};
   }
 }
 
+/// Claude AI model implementation.
 class Claude extends Models {
-  @override final String url = 'https://api.anthropic.com/v1/messages', apiKey, model;
+  @override
+  final String url = 'https://api.anthropic.com/v1/messages', apiKey, model;
   final String version;
 
   Claude({required this.apiKey, required this.version, required this.model});
@@ -186,7 +225,9 @@ class Claude extends Models {
     try {
       return response["content"][0]["text"];
     } catch (e) {
-      throw FormatException("Failed to parse AI response: $e \nResponse: $response");
+      throw FormatException(
+        "Failed to parse AI response: $e \nResponse: $response",
+      );
     }
   }
 
@@ -194,7 +235,7 @@ class Claude extends Models {
   Map<String, String> get headers => {
     'Content-Type': 'application/json',
     'x-api-key': apiKey,
-    'anthropic-version': version
+    'anthropic-version': version,
   };
 
   @override
@@ -204,57 +245,130 @@ class Claude extends Models {
       "max_tokens": 1024,
       "system": instruction,
       "messages": [
-        {
-          "role": "user",
-          "content": code
-        }
-      ]
+        {"role": "user", "content": code},
+      ],
     };
   }
 }
 
-class Grok extends OpenAiCompatible{
-  @override String get baseUrl => "https://api.x.ai/v1";
-  @override final String apiKey, model;
+/// Grok aka xAI AI model implementation.
+class Grok extends OpenAiCompatible {
+  @override
+  String get baseUrl => "https://api.x.ai/v1";
+  @override
+  final String apiKey, model;
   Grok({required this.apiKey, required this.model});
 }
 
-class DeepSeek extends OpenAiCompatible{
-  @override String get baseUrl => "https://api.deepseek.com";
-  @override final String apiKey, model;
+/// DeepSeek AI model implementation.
+class DeepSeek extends OpenAiCompatible {
+  @override
+  String get baseUrl => "https://api.deepseek.com";
+  @override
+  final String apiKey, model;
   DeepSeek({required this.apiKey, required this.model});
 }
 
-class Gorq extends OpenAiCompatible{
-  @override String get baseUrl => "https://api.groq.com/openai/v1";
-  @override final String apiKey, model;
+/// Groq AI model implementation.
+class Gorq extends OpenAiCompatible {
+  @override
+  String get baseUrl => "https://api.groq.com/openai/v1";
+  @override
+  final String apiKey, model;
   Gorq({required this.apiKey, required this.model});
 }
 
-class TogetherAi extends OpenAiCompatible{
-  @override String get baseUrl => "https://api.together.xyz/v1";
-  @override final String apiKey, model;
+/// Together AI model implementation.
+class TogetherAi extends OpenAiCompatible {
+  @override
+  String get baseUrl => "https://api.together.xyz/v1";
+  @override
+  final String apiKey, model;
   TogetherAi({required this.apiKey, required this.model});
 }
 
-class Sonar extends OpenAiCompatible{
-  @override String get baseUrl => "https://api.perplexity.ai";
-  @override final String apiKey, model;
+/// Sonar AI model implementation.
+class Sonar extends OpenAiCompatible {
+  @override
+  String get baseUrl => "https://api.perplexity.ai";
+  @override
+  final String apiKey, model;
   Sonar({required this.apiKey, required this.model});
 }
 
-class OpenRouter extends OpenAiCompatible{
-  @override String get baseUrl => "https://openrouter.ai/api/v1";
-  @override final String apiKey, model;
+/// OpenRouter AI model implementation.
+class OpenRouter extends OpenAiCompatible {
+  @override
+  String get baseUrl => "https://openrouter.ai/api/v1";
+  @override
+  final String apiKey, model;
   OpenRouter({required this.apiKey, required this.model});
 }
 
-class FireWorks extends OpenAiCompatible{
-  @override String get baseUrl => "https://api.fireworks.ai/inference/v1";
-  @override final String apiKey, model;
+/// FireWorks AI model implementation.
+class FireWorks extends OpenAiCompatible {
+  @override
+  String get baseUrl => "https://api.fireworks.ai/inference/v1";
+  @override
+  final String apiKey, model;
   FireWorks({required this.apiKey, required this.model});
 }
 
+/// Custom AI model implementation that allows for custom API endpoints and request/response handling.
+///
+/// Example usage:
+///
+/// ```dart
+///late final Models model;
+///
+///  @override
+///  void initState() {
+///    model = CustomModel(
+///      url: "https://api.together.xyz/v1/chat/completions",
+///      customHeaders: {
+///        "Authorization": "Bearer ${your_api_key}",
+///        "Content-Type": "application/json"
+///      },
+///      requestBuilder: (code, instruction){
+///       return {
+///          "model": "deepseek-ai/DeepSeek-V3",
+///          "messages": [
+///            {
+///              "role": "system",
+///             "content": instruction
+///            },
+///            {
+///              "role": "user",
+///              "content": code
+///           }
+///          ]
+///        };
+///      },
+///      customParser: (response) => response['choices'][0]['message']['content']
+///    );
+///    controller = CodeCrafterController();
+///    controller.language = python;
+///    super.initState();
+///  }
+///```
+///Then pass the `model` instance to the `AiCompletion` class:
+
+///```dart
+/// @override
+///  Widget build(BuildContext context) {
+///    return MaterialApp(
+///      home: Scaffold(
+///        body: CodeCrafter(
+///          editorTheme: anOldHopeTheme,
+///          controller: controller,
+///          aiCompletion: AiCompletion(
+///            model: model // Pass the custom model here
+///          ),
+///        )
+///      ),
+///    );
+/// }
+///```
 class CustomModel extends Models {
   @override
   final String url;
@@ -264,7 +378,8 @@ class CustomModel extends Models {
   String? get model => null;
   final String httpMethod;
   final Map<String, String> customHeaders;
-  final Map<String, dynamic> Function(String code, String instruction)? requestBuilder;
+  final Map<String, dynamic> Function(String code, String instruction)?
+  requestBuilder;
   final String Function(dynamic response) customParser;
 
   CustomModel({
@@ -280,16 +395,15 @@ class CustomModel extends Models {
     try {
       return customParser(response);
     } catch (e) {
-      throw FormatException("Failed to parse AI response: $e \nResponse: $response");
+      throw FormatException(
+        "Failed to parse AI response: $e \nResponse: $response",
+      );
     }
   }
 
   @override
   Map<String, String> get headers {
-    final headers = {
-      'Content-Type': 'application/json',
-      ...customHeaders,
-    };
+    final headers = {'Content-Type': 'application/json', ...customHeaders};
 
     return headers;
   }
@@ -302,10 +416,7 @@ class CustomModel extends Models {
     return {
       if (model != null) 'model': model,
       'code': code,
-      'parameters': {
-        'instruction': instruction,
-        'temperature': 0.2,
-      }
+      'parameters': {'instruction': instruction, 'temperature': 0.2},
     };
   }
 
@@ -314,12 +425,12 @@ class CustomModel extends Models {
     try {
       final uri = Uri.parse(url);
       final response = httpMethod.toUpperCase() == 'GET'
-        ? await http.get(uri, headers: headers)
-        : await http.post(
-            uri,
-            headers: headers,
-            body: jsonEncode(buildRequest(code)),
-          );
+          ? await http.get(uri, headers: headers)
+          : await http.post(
+              uri,
+              headers: headers,
+              body: jsonEncode(buildRequest(code)),
+            );
 
       if (response.statusCode == 200) {
         return responseParser(jsonDecode(response.body));

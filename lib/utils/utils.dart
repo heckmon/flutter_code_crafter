@@ -1,26 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+/// This class is used to represent the state of a line in the editor.
+/// It is used internally by the [CodeCrafter] widget to manage line states such as breakpoints and folding ranges.
 class LineState {
   final int lineNumber;
   final bool hasBreakpoint;
 
   FoldRange? foldRange;
 
-  LineState({
-    required this.lineNumber,
-    this.hasBreakpoint = false,
-  });
+  LineState({required this.lineNumber, this.hasBreakpoint = false});
 }
 
+/// This class is used to represent a range of lines that can be folded in the editor.
+/// It is used internally by the [CodeCrafter] widget to manage folding ranges.
 class FoldRange {
   final int startLine, endLine;
   bool isFolded;
   List<String> foldedLines = [];
-  
-  FoldRange(
-    this.startLine,
-    this.endLine,{this.isFolded = false});
+
+  FoldRange(this.startLine, this.endLine, {this.isFolded = false});
 }
 
 enum CompletionItemType {
@@ -56,33 +55,69 @@ enum CompletionItemType {
 
 Map<CompletionItemType, Icon> completionItemIcons = {
   CompletionItemType.text: Icon(Icons.text_snippet_rounded, color: Colors.grey),
-  CompletionItemType.method: Icon(CustomIcons.method, color: const Color(0xff9e74c0)),
-  CompletionItemType.function: Icon(CustomIcons.method, color: const Color(0xff9e74c0)),
-  CompletionItemType.constructor: Icon(CustomIcons.method, color: const Color(0xff9e74c0)),
-  CompletionItemType.field: Icon(CustomIcons.field, color: const Color(0xff75beff)),
-  CompletionItemType.variable: Icon(CustomIcons.variable, color: const Color(0xff75beff)),
-  CompletionItemType.class_: Icon(CustomIcons.class_, color: const Color(0xffee9d28)),
+  CompletionItemType.method: Icon(
+    CustomIcons.method,
+    color: const Color(0xff9e74c0),
+  ),
+  CompletionItemType.function: Icon(
+    CustomIcons.method,
+    color: const Color(0xff9e74c0),
+  ),
+  CompletionItemType.constructor: Icon(
+    CustomIcons.method,
+    color: const Color(0xff9e74c0),
+  ),
+  CompletionItemType.field: Icon(
+    CustomIcons.field,
+    color: const Color(0xff75beff),
+  ),
+  CompletionItemType.variable: Icon(
+    CustomIcons.variable,
+    color: const Color(0xff75beff),
+  ),
+  CompletionItemType.class_: Icon(
+    CustomIcons.class_,
+    color: const Color(0xffee9d28),
+  ),
   CompletionItemType.interface: Icon(CustomIcons.interface, color: Colors.grey),
   CompletionItemType.module: Icon(Icons.folder_special, color: Colors.grey),
   CompletionItemType.property: Icon(Icons.build, color: Colors.grey),
   CompletionItemType.unit: Icon(Icons.view_module, color: Colors.grey),
   CompletionItemType.value_: Icon(Icons.numbers, color: Colors.grey),
-  CompletionItemType.enum_: Icon(CustomIcons.enum_, color: const Color(0xffee9d28)),
+  CompletionItemType.enum_: Icon(
+    CustomIcons.enum_,
+    color: const Color(0xffee9d28),
+  ),
   CompletionItemType.keyword: Icon(CustomIcons.keyword, color: Colors.grey),
   CompletionItemType.snippet: Icon(CustomIcons.snippet, color: Colors.grey),
   CompletionItemType.color: Icon(Icons.color_lens, color: Colors.grey),
   CompletionItemType.file: Icon(Icons.insert_drive_file, color: Colors.grey),
   CompletionItemType.reference: Icon(CustomIcons.reference, color: Colors.grey),
   CompletionItemType.folder: Icon(Icons.folder, color: Colors.grey),
-  CompletionItemType.enumMember: Icon(CustomIcons.enum_, color: const Color(0xff75beff)),
-  CompletionItemType.constant: Icon(CustomIcons.constant, color: const Color(0xff75beff)),
-  CompletionItemType.struct: Icon(CustomIcons.struct, color: const Color(0xff75beff)),
-  CompletionItemType.event: Icon(CustomIcons.event, color: const Color(0xffee9d28)),
+  CompletionItemType.enumMember: Icon(
+    CustomIcons.enum_,
+    color: const Color(0xff75beff),
+  ),
+  CompletionItemType.constant: Icon(
+    CustomIcons.constant,
+    color: const Color(0xff75beff),
+  ),
+  CompletionItemType.struct: Icon(
+    CustomIcons.struct,
+    color: const Color(0xff75beff),
+  ),
+  CompletionItemType.event: Icon(
+    CustomIcons.event,
+    color: const Color(0xffee9d28),
+  ),
   CompletionItemType.operator: Icon(CustomIcons.operator, color: Colors.grey),
-  CompletionItemType.typeParameter: Icon(CustomIcons.parameter, color: const Color(0xffee9d28)),
+  CompletionItemType.typeParameter: Icon(
+    CustomIcons.parameter,
+    color: const Color(0xffee9d28),
+  ),
 };
 
-class CustomIcons{
+class CustomIcons {
   static const IconData method = IconData(0xe900, fontFamily: 'Method');
   static const IconData variable = IconData(0xe900, fontFamily: 'Variable');
   static const IconData class_ = IconData(0xe900, fontFamily: 'Class');
@@ -99,24 +134,42 @@ class CustomIcons{
   static const IconData field = IconData(0x900, fontFamily: 'Field');
 }
 
-class LspCompletion{
+/// Represents a completion item in the LSP (Language Server Protocol).
+/// This class is used internally by the [CodeCrafter] widget to display completion suggestions.
+class LspCompletion {
+  /// The label of the completion item, which is displayed in the completion suggestions.
   final String label;
+
+  /// The type of the completion item, which determines the icon and color used to represent it.
+  /// The icon is determined by the [completionItemIcons] map.
   final CompletionItemType itemType;
+
+  /// The icon associated with the completion item, determined by its type.
   final Icon icon;
 
-  LspCompletion({
-    required this.label,
-    required this.itemType,
-  }): icon = Icon(
-    completionItemIcons[itemType]!.icon,
-    color: completionItemIcons[itemType]!.color,
-    size: 18, 
-  );
+  LspCompletion({required this.label, required this.itemType})
+    : icon = Icon(
+        completionItemIcons[itemType]!.icon,
+        color: completionItemIcons[itemType]!.color,
+        size: 18,
+      );
 }
 
-class LspErrors{
+/// Represents an error in the LSP (Language Server Protocol).
+/// This class is used internally by the [CodeCrafter] widget to display errors in the editor.
+class LspErrors {
+  /// The severity of the error, which can be one of the following:
+  /// - 1: Error
+  /// - 2: Warning
+  /// - 3: Information
+  /// - 4: Hint
   final int severity;
+
+  /// The range of the error in the document, represented as a map with keys 'start' and 'end'.
+  /// The 'start' and 'end' keys are maps with 'line' and 'character' keys.
   final Map<String, dynamic> range;
+
+  /// The message describing the error.
   String message;
 
   LspErrors({
@@ -126,6 +179,9 @@ class LspErrors{
   });
 }
 
+/// This class is used to define the properties of the [CodeCrafter] field.
+/// It includes the same properties as the [TextField] widget,.
+/// If provided it will be passed to the underlying [TextField] of the [CodeCrafter] widget.
 class EditorField {
   Key? key;
 
@@ -241,7 +297,8 @@ class EditorField {
       textAlign: textAlign ?? TextAlign.start,
       textAlignVertical: textAlignVertical,
       textDirection: textDirection,
-      style: style ?? fallbackStyle ?? const TextStyle(fontSize: 14, height: 1.5),
+      style:
+          style ?? fallbackStyle ?? const TextStyle(fontSize: 14, height: 1.5),
       maxLines: maxLines,
       minLines: minLines,
       maxLength: maxLength,
@@ -250,15 +307,15 @@ class EditorField {
       cursorWidth: cursorWidth ?? 2,
       cursorHeight: cursorHeight ?? fallbackStyle?.fontSize ?? 14,
       cursorRadius: cursorRadius,
-      cursorColor: cursorColor ?? fallbackCursorColor ?? editorTheme?['root']?.color ?? Colors.white,
+      cursorColor:
+          cursorColor ??
+          fallbackCursorColor ??
+          editorTheme?['root']?.color ??
+          Colors.white,
       expands: expands ?? false,
-      decoration: decoration?.copyWith(
-        isCollapsed: true,
-        border: InputBorder.none,
-      ) ?? const InputDecoration(
-        isCollapsed: true,
-        border: InputBorder.none,
-      ),
+      decoration:
+          decoration?.copyWith(isCollapsed: true, border: InputBorder.none) ??
+          const InputDecoration(isCollapsed: true, border: InputBorder.none),
       scrollPhysics: scrollPhysics ?? const NeverScrollableScrollPhysics(),
       scrollController: scrollController,
       enableInteractiveSelection: enableInteractiveSelection,
@@ -272,10 +329,13 @@ class EditorField {
     );
   }
 
+  /// Creates a copy of this [EditorField] with the given fields replaced by the new values.
   EditorField copyWith({
     Key? key,
-    void Function(String)? onChanged, onSubmitted,
-    void Function()? onTap, onEditingComplete,
+    void Function(String)? onChanged,
+    onSubmitted,
+    void Function()? onTap,
+    onEditingComplete,
     void Function(PointerDownEvent)? onTapOutside,
 
     // Keyboard & input
@@ -283,7 +343,9 @@ class EditorField {
     TextInputAction? textInputAction,
     List<TextInputFormatter>? inputFormatters,
     TextCapitalization? textCapitalization,
-    bool? obscureText, enableSuggestions, autocorrect,
+    bool? obscureText,
+    enableSuggestions,
+    autocorrect,
 
     // Layout & appearance
     InputDecoration? decoration,
@@ -292,12 +354,15 @@ class EditorField {
     TextDirection? textDirection,
     TextAlignVertical? textAlignVertical,
     bool? expands,
-    int? maxLines, minLines, maxLength,
+    int? maxLines,
+    minLines,
+    maxLength,
     MaxLengthEnforcement? maxLengthEnforcement,
 
     // Cursor & selection
     bool? showCursor,
-    double? cursorWidth, cursorHeight,
+    double? cursorWidth,
+    cursorHeight,
     Radius? cursorRadius,
     Color? cursorColor,
     bool? enableInteractiveSelection,
@@ -311,8 +376,8 @@ class EditorField {
     Iterable<String>? autofillHints,
     String? restorationId,
     MouseCursor? mouseCursor,
-    EditableTextContextMenuBuilder? contextMenuBuilder
-   }){
+    EditableTextContextMenuBuilder? contextMenuBuilder,
+  }) {
     return EditorField(
       key: key ?? this.key,
 
@@ -346,7 +411,8 @@ class EditorField {
       cursorHeight: cursorHeight ?? this.cursorHeight,
       cursorRadius: cursorRadius ?? this.cursorRadius,
       cursorColor: cursorColor ?? this.cursorColor,
-      enableInteractiveSelection: enableInteractiveSelection ?? this.enableInteractiveSelection,
+      enableInteractiveSelection:
+          enableInteractiveSelection ?? this.enableInteractiveSelection,
       selectionControls: selectionControls ?? this.selectionControls,
 
       scrollPhysics: scrollPhysics ?? this.scrollPhysics,

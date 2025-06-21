@@ -1,3 +1,3 @@
 ## 0.0.1
 
-* TODO: Describe initial release.
+* Initial release: Powerful code editor with syntax highlighting, AI code completion, built in LSP client and more.

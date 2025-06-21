@@ -8,15 +8,29 @@ part 'lsp_socket.dart';
 part 'lsp_stdio.dart';
 
 sealed class LspConfig {
-  final String filePath, languageId, workspacePath;
-  final StreamController<Map<String, dynamic>> _responseController = StreamController.broadcast();
+  /// The file path of the document to be processed by the LSP.
+  final String filePath;
+
+  /// The language ID of the language.
+  ///
+  /// languageId depends on the server you are using.
+  /// For example, for dart-analyzer give "rust" for pyright-langserver, it is 'python', so on.
+  final String languageId;
+
+  /// The workspace path of the document to be processed by the LSP.
+  ///
+  /// The workspacePath is the root directory of the project or workspace.
+  /// If you are using a single file, you can set it to the parent directory of the file.
+  final String workspacePath;
+  final StreamController<Map<String, dynamic>> _responseController =
+      StreamController.broadcast();
   int _nextId = 1;
   final _openDocuments = <String, int>{};
 
   LspConfig({
     required this.filePath,
     required this.workspacePath,
-    required this.languageId
+    required this.languageId,
   });
 
   void dispose();
@@ -31,19 +45,27 @@ sealed class LspConfig {
     required Map<String, dynamic> params,
   });
 
+  /// This method is used to initialize the LSP server.
+  ///
+  /// This method is used internally by the [CodeCrafter] widget and calling it directly is not recommended.
+  /// It may carsh the LSP server if called multiple times.
   Future<void> initialize() async {
     final response = await _sendRequest(
       method: 'initialize',
       params: {
         'processId': pid,
         'workspaceFolders': [
-          {'uri': Uri.file(workspacePath).toString(), 'name': 'workspace'}
+          {'uri': Uri.file(workspacePath).toString(), 'name': 'workspace'},
         ],
         'capabilities': {
           'textDocument': {
-            'completion': {'completionItem': {'snippetSupport': false}}
+            'completion': {
+              'completionItem': {'snippetSupport': false},
+            },
           },
-          'hover': {'contentFormat': ['markdown']}
+          'hover': {
+            'contentFormat': ['markdown'],
+          },
         },
       },
     );
@@ -62,6 +84,9 @@ sealed class LspConfig {
     };
   }
 
+  /// Opens the document in the LSP server.
+  ///
+  /// This method is used internally by the [CodeCrafter] widget and calling it directly is not recommended.
   Future<void> openDocument() async {
     final version = (_openDocuments[filePath] ?? 0) + 1;
     _openDocuments[filePath] = version;
@@ -73,7 +98,7 @@ sealed class LspConfig {
           'languageId': languageId,
           'version': version,
           'text': await File(filePath).readAsString(),
-        }
+        },
       },
     );
     await Future.delayed(Duration(milliseconds: 300));
@@ -83,10 +108,10 @@ sealed class LspConfig {
     if (!_openDocuments.containsKey(filePath)) {
       return;
     }
-    
+
     final version = _openDocuments[filePath]! + 1;
     _openDocuments[filePath] = version;
-    
+
     await _sendNotification(
       method: 'textDocument/didChange',
       params: {
@@ -95,61 +120,69 @@ sealed class LspConfig {
           'version': version,
         },
         'contentChanges': [
-          {
-            'text': content,
-          }
-        ]
+          {'text': content},
+        ],
       },
     );
   }
 
+  /// Updates the document in the LSP server if there is any change.
+  /// ///
+  /// This method is used internally by the [CodeCrafter] widget and calling it directly is not recommended.
   Future<void> closeDocument() async {
     if (!_openDocuments.containsKey(filePath)) return;
-    
+
     await _sendNotification(
       method: 'textDocument/didClose',
       params: {
-        'textDocument': {
-          'uri': Uri.file(filePath).toString(),
-        }
+        'textDocument': {'uri': Uri.file(filePath).toString()},
       },
     );
     _openDocuments.remove(filePath);
   }
 
+  /// This method is used to get completions at a specific position in the document.
+  ///
+  /// This method is used internally by the [CodeCrafter], calling this with appropriate parameters will returns a [List] of [LspCompletion].
   Future<List<LspCompletion>> getCompletions(int line, int character) async {
     List<LspCompletion> completion = [];
     final response = await _sendRequest(
       method: 'textDocument/completion',
-      params: _commonParams(line, character)
+      params: _commonParams(line, character),
     );
-    for(var item in response['result']['items']) {
-      completion.add(LspCompletion(
-        label: item['label'],
-        itemType: CompletionItemType.values.firstWhere(
-          (type) => type.value == item['kind'],
-          orElse: () => CompletionItemType.text,
+    for (var item in response['result']['items']) {
+      completion.add(
+        LspCompletion(
+          label: item['label'],
+          itemType: CompletionItemType.values.firstWhere(
+            (type) => type.value == item['kind'],
+            orElse: () => CompletionItemType.text,
+          ),
         ),
-      ));
+      );
     }
     return completion;
   }
 
+  /// This method is used to get details at a specific position in the document.
+  ///
+  /// This method is used internally by the [CodeCrafter], calling this with appropriate parameters will returns a [String].
+  /// If the LSP server does not support hover or the location provided is invalid, it will return an empty string.
   Future<String> getHover(int line, int character) async {
     final response = await _sendRequest(
       method: 'textDocument/hover',
-      params: _commonParams(line, character)
+      params: _commonParams(line, character),
     );
-    if(response['result'] == null || response['result'].isEmpty) return '';
+    if (response['result'] == null || response['result'].isEmpty) return '';
     return response['result']['contents']['value'] ?? '';
   }
 
   Future<String> getDefinition(int line, int character) async {
-    final response= await _sendRequest(
+    final response = await _sendRequest(
       method: 'textDocument/definition',
-      params: _commonParams(line, character)
+      params: _commonParams(line, character),
     );
-    if(response['result'] == null || response['result'].isEmpty) return '';
+    if (response['result'] == null || response['result'].isEmpty) return '';
     return response['result'][1]['uri'] ?? '';
   }
 
@@ -158,9 +191,9 @@ sealed class LspConfig {
     params['context'] = {'includeDeclaration': true};
     final response = await _sendRequest(
       method: 'textDocument/references',
-      params: params
+      params: params,
     );
-    if(response['result'] == null || response['result'].isEmpty) return [];
+    if (response['result'] == null || response['result'].isEmpty) return [];
     return response['result'];
   }
 
