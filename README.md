@@ -6,6 +6,8 @@ A powerful and feature-rich code editor for flutter, designed to bring a seamles
 [![pub package](https://img.shields.io/pub/v/flutter_code_crafter.svg?cacheSeconds=60)](https://pub.dev/packages/flutter_code_crafter)
 ![GitHub license](https://img.shields.io/github/license/heckmon/flutter_code_crafter.svg)
 ![GitHub stars](https://img.shields.io/github/stars/heckmon/flutter_code_crafter.svg?style=social&label=Star&cacheSeconds=60)
+<a href="https://www.buymeacoffee.com/bames_jond">
+    <img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" width="100" height="30">  </a>
 
 ## Features
 
