@@ -540,20 +540,22 @@ class _CodeCrafterState extends State<CodeCrafter> {
                               ? _suggestions[i].icon
                               : const SizedBox(),
                           const SizedBox(width: 6),
-                          Text(
-                            _suggestions[i] is LspCompletion
-                                ? _suggestions[i].label
-                                : _suggestions[i],
-                            overflow: TextOverflow.ellipsis,
-                            style:
-                                widget.suggestionStyle?.textStyle ??
-                                TextStyle(
-                                  color:
-                                      widget.editorTheme?['root']?.color ??
-                                      Colors.white,
-                                  fontSize:
-                                      (widget.textStyle?.fontSize ?? 14) - 2,
-                                ),
+                          Expanded(
+                            child: Text(
+                              _suggestions[i] is LspCompletion
+                                  ? _suggestions[i].label
+                                  : _suggestions[i],
+                              overflow: TextOverflow.ellipsis,
+                              style:
+                                  widget.suggestionStyle?.textStyle ??
+                                  TextStyle(
+                                    color:
+                                        widget.editorTheme?['root']?.color ??
+                                        Colors.white,
+                                    fontSize:
+                                        (widget.textStyle?.fontSize ?? 14) - 2,
+                                  ),
+                            ),
                           ),
                         ],
                       ),
