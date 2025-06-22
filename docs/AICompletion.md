@@ -6,7 +6,7 @@ You can use the AI code completion feature in CodeCrafter to get code suggestion
 
 ### `AiCompletion` class
 #### required parameters:
-- `model`: An instance of the `Models` class, which can be one of the built-in AI models or a custom model.
+- `model`: An instance of the `Models` class, which can be one of the [built-in AI models](#built-in-ai-models) or a [custom model](#custom-ai-model).
 #### optional parameters:
 - `enableCompletion`: A boolean value to enable or disable AI code completion. Defaults to `true`.
 
