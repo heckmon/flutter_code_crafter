@@ -19,18 +19,23 @@ A powerful and feature-rich code editor for flutter, designed to bring a seamles
 <br>
 
 <p align="left">
-  <img src="https://files.catbox.moe/ohyfpu.gif" alt="Syntax Highlighting" width="429" height="415"><br>
+  <img src="https://files.catbox.moe/ohyfpu.gif" alt="Syntax Highlighting" width="425" height="415"><br>
   <sub>AI Code completion and LSP suggestion</sub>
 </p>
 
 <p align="left">
-  <img src="https://files.catbox.moe/kic1bb.gif" alt="Code Folding" width="429" height="415"><br>
+  <img src="https://files.catbox.moe/kic1bb.gif" alt="Code Folding" width="425" height="415"><br>
   <sub>Code folding and breakpoints</sub>
 </p>
 
 <p align="left">
-  <img src="https://files.catbox.moe/a1sx73.gif" alt="AI Completion" width="429" height="415"><br>
-  <sub>LSP hover</sub>
+  <img src="https://files.catbox.moe/4skc39.gif" alt="AI Completion" width="425" height="415"><br>
+  <sub>LSP hover using pyright LSP server</sub>
+</p>
+
+<p align="left">
+  <img src="https://files.catbox.moe/y5kzcr.gif" alt="LSP Client" width="425" height="425"><br>
+  <sub>Bracket matching and auto indentation<br>error highlight using clangd LSP server</sub>
 </p>
 
 <br>
