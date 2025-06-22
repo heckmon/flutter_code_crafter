@@ -19,17 +19,17 @@ A powerful and feature-rich code editor for flutter, designed to bring a seamles
 <br>
 
 <p align="left">
-  <img src="https://files.catbox.moe/wfny7c.gif" alt="Syntax Highlighting" width="300" height="550"><br>
+  <img src="https://files.catbox.moe/ohyfpu.gif" alt="Syntax Highlighting" width="429" height="415"><br>
   <sub>AI Code completion and LSP suggestion</sub>
 </p>
 
 <p align="left">
-  <img src="https://files.catbox.moe/k8sfly.gif" alt="Code Folding" width="300" height="550"><br>
+  <img src="https://files.catbox.moe/kic1bb.gif" alt="Code Folding" width="429" height="415"><br>
   <sub>Code folding and breakpoints</sub>
 </p>
 
 <p align="left">
-  <img src="https://files.catbox.moe/kbpa95.gif" alt="AI Completion" width="300" height="550"><br>
+  <img src="https://files.catbox.moe/a1sx73.gif" alt="AI Completion" width="429" height="415"><br>
   <sub>LSP hover</sub>
 </p>
 
@@ -44,7 +44,7 @@ Plug and play with `CodeCrafter` widget. Import a langauge from the [highlight](
 
 ```dart
 import 'package:flutter/material.dart';
-import 'package:code_crafter/code_crafter.dart';
+import 'package:flutter_code_crafter/code_crafter.dart';
 import 'package:flutter_highlight/themes/an-old-hope.dart'; // Import the theme you want to use
 import 'package:highlight/languages/python.dart'; // Import the language you want to use
 
