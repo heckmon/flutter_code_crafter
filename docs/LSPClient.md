@@ -43,6 +43,7 @@ Then pass the `lspConfig` instance to the `CodeCrafter` widget:
 CodeCrafter(
     controller: controller,
     theme: anOldHopeTheme,
+    filePath: "/home/athul/Projects/lsp/example.py"
     lspConfig: lspConfig, // Pass the LSP config here
 ),
 ```
