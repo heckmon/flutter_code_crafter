@@ -85,10 +85,10 @@ class CodeCrafterController extends TextEditingController {
       final prevLine = lines[lines.length - 2];
       final indentMatch = RegExp(r'^\s*').firstMatch(prevLine);
       final prevIndent = indentMatch?.group(0) ?? '';
-      final shouldIndent = RegExp(r'[:{[(<]\s*$').hasMatch(prevLine);
+      final shouldIndent = RegExp(r'[:{[(]\s*$').hasMatch(prevLine);
       final extraIndent = shouldIndent ? ' ' * Shared().tabSize : '';
       final indent = prevIndent + extraIndent;
-      final openToClose = {'{': '}', '(': ')', '[': ']', '<': '>'};
+      final openToClose = {'{': '}', '(': ')', '[': ']'};
       final lastChar = prevLine.trimRight().isNotEmpty
           ? prevLine.trimRight().characters.last
           : null;
@@ -124,7 +124,6 @@ class CodeCrafterController extends TextEditingController {
       '(': ')',
       '{': '}',
       '[': ']',
-      '<': '>',
       "'": "'",
       '"': '"',
     };
@@ -176,10 +175,8 @@ class CodeCrafterController extends TextEditingController {
       ')': '(',
       '}': '{',
       ']': '[',
-      '<': '>',
-      '>': '<',
     };
-    const String openers = '({[<';
+    const String openers = '({[';
 
     if (pos < 0 || pos >= text.length) return null;
 
@@ -226,9 +223,9 @@ class CodeCrafterController extends TextEditingController {
       final String? after = cursorPosition < text.length
           ? text[cursorPosition]
           : null;
-      final int? pos = (before != null && '{}[]()<>'.contains(before))
+      final int? pos = (before != null && '{}[]()'.contains(before))
           ? cursorPosition - 1
-          : (after != null && '{}[]()<>'.contains(after))
+          : (after != null && '{}[]()'.contains(after))
           ? cursorPosition
           : null;
 

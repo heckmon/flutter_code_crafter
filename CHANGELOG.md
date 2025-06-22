@@ -7,3 +7,7 @@
 
 * Fixed Text Overflow in LSP suggestion.
 * Documentation enhancements.
+
+## 0.0.3
+
+* Removed angle brackets matching. Causing false matching on comparison operator.
