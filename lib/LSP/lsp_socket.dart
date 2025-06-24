@@ -1,4 +1,4 @@
-part of 'lsp.dart';
+part of 'lsp_io.dart';
 
 /// A configuration class for Language Server Protocol (LSP) using WebSocket communication.
 ///

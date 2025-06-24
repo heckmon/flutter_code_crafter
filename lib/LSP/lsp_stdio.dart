@@ -1,4 +1,4 @@
-part of 'lsp.dart';
+part of 'lsp_io.dart';
 
 /// This class provides a configuration for Language Server Protocol (LSP) using standard input/output communication.
 /// Little bit complex compared to [LspSocketConfig].

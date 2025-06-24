@@ -16,3 +16,6 @@
 
 * Fixed cursor position starting at -1.
 
+## 0.0.5
+
+* Added web support using conditional imports.

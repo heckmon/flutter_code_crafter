@@ -1,6 +1,6 @@
 name: flutter_code_crafter
 description: "Powerful code editor with AI code completion and LSP support"
-version: 0.0.4
+version: 0.0.5
 homepage: https://github.com/heckmon/flutter_code_crafter
 
 environment:
@@ -65,3 +65,11 @@ flutter:
     - family: Field
       fonts:
         - asset: assets/icons/field.ttf
+
+platforms:
+  android:
+  ios:
+  web:
+  linux:
+  macos:
+  windows:

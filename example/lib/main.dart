@@ -34,22 +34,18 @@ class _MainAppState extends State<MainApp> {
           editorTheme: anOldHopeTheme,
           controller: controller,
           filePath: '/home/athul/Projects/lsp/example.py',
-          textStyle: GoogleFonts.notoSansMono(
-            fontSize: 15,
-          ),
+          textStyle: GoogleFonts.notoSansMono(fontSize: 15),
           aiCompletion: AiCompletion(
             enableCompletion: true,
-            model: Gemini(
-              apiKey: apiKey
-            )
+            model: Gemini(apiKey: apiKey),
           ),
           lspConfig: LspSocketConfig(
             filePath: '/home/athul/Projects/lsp/example.py',
             workspacePath: "/home/athul/Projects/lsp",
             languageId: "python",
-            serverUrl: "ws://localhost:5656"
+            serverUrl: "ws://localhost:5656",
           ),
-        )
+        ),
       ),
     );
   }
