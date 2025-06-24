@@ -517,6 +517,7 @@ class CodeCrafterController extends TextEditingController {
     return {'line': line, 'character': character};
   }
 
+  /// Refreshes the controller, notifying all listeners.
   void refresh() {
     notifyListeners();
   }

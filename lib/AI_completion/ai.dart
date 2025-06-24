@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:io';
 import 'package:meta/meta.dart';
 import 'package:http/http.dart' as http;
 
@@ -11,7 +10,7 @@ import 'package:http/http.dart' as http;
 /// ```dart
 ///import 'package:flutter/material.dart';
 ///import 'package:code_crafter/code_crafter.dart';
-
+///
 ///final aiCompletion = AiCompletion(
 ///    model: Gemini(
 ///        apiKey: "Your API Key",
@@ -52,8 +51,12 @@ class AiCompletion {
 sealed class Models {
   @protected
   String get url;
+  /// API key for the AI service, if required.
   String? get apiKey;
+  /// The model to use for AI completion, if applicable.
   String? get model;
+  /// Headers to include in the HTTP request.
+  @protected
   Map<String, String> get headers;
 
   @protected
@@ -74,7 +77,7 @@ sealed class Models {
     if (response.statusCode == 200) {
       return _cleanCode(responseParser(jsonDecode(response.body)));
     }
-    throw HttpException(
+    throw Exception(
       "Failed to load AI suggestion \nStatus code: ${response.statusCode}\n error: ${response.body}",
     );
   }
@@ -435,9 +438,8 @@ class CustomModel extends Models {
       if (response.statusCode == 200) {
         return responseParser(jsonDecode(response.body));
       } else {
-        throw HttpException(
-          'Request failed with status ${response.statusCode}\n ${response.body}',
-          uri: uri,
+        throw Exception(
+          'Request failed with status ${response.statusCode}\n ${response.body}\n$uri',
         );
       }
     } catch (e) {

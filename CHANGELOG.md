@@ -23,3 +23,7 @@
 ## 0.0.6
 
 * Web support enhancements.
+
+## 0.0.7
+
+* Removed dart:io import for web support.

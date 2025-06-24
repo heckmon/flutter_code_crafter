@@ -5,6 +5,8 @@ import '../utils/shared.dart';
 import '../code_crafter/code_crafter_controller.dart';
 import 'package:flutter/material.dart';
 
+/// A widget that displays a gutter with line numbers, breakpoints, and folding icons.
+/// Managed internally by the [CodeCrafterController].
 class Gutter extends StatefulWidget {
   final bool enableBreakPoints, enableFolding;
   final GutterStyle gutterStyle;
