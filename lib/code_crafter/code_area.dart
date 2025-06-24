@@ -1,4 +1,5 @@
-import 'dart:io';
+import '../utils/file_loader_stub.dart'
+    if (dart.library.io) '../utils/file_loader_io.dart';
 import 'dart:async';
 import '../LSP/lsp.dart';
 import '../utils/utils.dart';
@@ -190,7 +191,7 @@ class _CodeCrafterState extends State<CodeCrafter> {
     }
     if (widget.filePath != null) {
       (() async {
-        content = await File(widget.filePath!).readAsString();
+        content = await FileLoader().readFile(widget.filePath!);
         widget.controller.value = TextEditingValue(
           text: content ?? '',
           selection: TextSelection.collapsed(offset: content?.length ?? 0),

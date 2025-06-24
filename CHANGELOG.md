@@ -19,3 +19,7 @@
 ## 0.0.5
 
 * Added web support using conditional imports.
+
+## 0.0.6
+
+* Web support enhancements.
