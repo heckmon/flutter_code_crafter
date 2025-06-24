@@ -247,8 +247,9 @@ class _CodeCrafterState extends State<CodeCrafter> {
     String oldVal = '';
     _value = widget.controller.text;
     widget.controller.addListener(() {
-      final currentText = widget.controller.text;
       final cursorOffset = widget.controller.selection.baseOffset;
+      if(cursorOffset < 0) return;
+      final currentText = widget.controller.text;
       final lines = currentText.substring(0, cursorOffset).split('\n');
       final line = lines.length - 1;
       final prefix = _getCurrentWordPrefix(currentText, cursorOffset);

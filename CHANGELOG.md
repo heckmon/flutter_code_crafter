@@ -11,3 +11,8 @@
 ## 0.0.3
 
 * Removed angle brackets matching. Causing false matching on comparison operator.
+
+## 0.0.4
+
+* Fixed cursor position starting at -1.
+
