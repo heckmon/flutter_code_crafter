@@ -51,10 +51,13 @@ class AiCompletion {
 sealed class Models {
   @protected
   String get url;
+
   /// API key for the AI service, if required.
   String? get apiKey;
+
   /// The model to use for AI completion, if applicable.
   String? get model;
+
   /// Headers to include in the HTTP request.
   @protected
   Map<String, String> get headers;
