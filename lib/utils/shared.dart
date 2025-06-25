@@ -15,6 +15,7 @@ class Shared {
   Map<String, TextStyle> theme = {};
   TextStyle? textStyle, aiOverlayStyle;
   int tabSize = 0;
+  int? lastCursorPosition;
   List<LspErrors> diagnostics = [];
   bool enableRulerLines = true;
   CodeCrafterController controller = CodeCrafterController();

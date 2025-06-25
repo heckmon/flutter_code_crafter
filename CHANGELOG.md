@@ -37,3 +37,7 @@
 
 * Added manual trigger for AI code completion.
 * Add Vertical divider line between gutter and editor.
+
+## 0.1.0
+
+* Fixed bug in AI code completion.

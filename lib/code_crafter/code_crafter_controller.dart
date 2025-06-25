@@ -14,7 +14,7 @@ class CodeCrafterController extends TextEditingController {
   Mode? get language => _language;
 
   String? _langId;
-  int? _lastCursorPosition;
+  // int? _lastCursorPosition;
   final Map<int, Set<int>> _highlightIndex = {};
   TextStyle? _highlightStyle;
 
@@ -284,6 +284,15 @@ class CodeCrafterController extends TextEditingController {
         Shared().aiResponse!.isNotEmpty) {
       final String textBeforeCursor = newText.substring(0, cursorPosition);
       final String textAfterCursor = newText.substring(cursorPosition);
+
+      final bool atLineEnd =
+          textAfterCursor.isEmpty ||
+          textAfterCursor.startsWith('\n') ||
+          textAfterCursor.trim().isEmpty;
+
+      if (!atLineEnd) {
+        return TextSpan(text: newText, style: baseStyle);
+      }
       final String lastTypedChar = textBeforeCursor.isNotEmpty
           ? textBeforeCursor.characters.last.replaceAll("\n", '')
           : '';
@@ -291,18 +300,27 @@ class CodeCrafterController extends TextEditingController {
           .parse(textBeforeCursor, language: _langId)
           .nodes;
 
-      final String ai = Shared().aiResponse!;
-
-      if (_lastCursorPosition != null &&
-          cursorPosition != _lastCursorPosition) {
-        if (ai.isEmpty || !ai.startsWith(lastTypedChar)) {
+      if (Shared().lastCursorPosition != null &&
+          cursorPosition != Shared().lastCursorPosition) {
+        final movedCursor =
+            (cursorPosition != Shared().lastCursorPosition! + 1);
+        final mismatch =
+            lastTypedChar.trim().isNotEmpty &&
+            (Shared().aiResponse == null ||
+                Shared().aiResponse!.isEmpty ||
+                Shared().aiResponse![0] != lastTypedChar);
+        if (movedCursor || mismatch) {
           Shared().aiResponse = null;
-        } else if (ai.startsWith(lastTypedChar)) {
-          Shared().aiResponse = ai.substring(1);
         }
       }
 
-      _lastCursorPosition = cursorPosition;
+      if (Shared().aiResponse != null &&
+          Shared().aiResponse!.isNotEmpty &&
+          Shared().aiResponse![0] == lastTypedChar) {
+        Shared().aiResponse = Shared().aiResponse!.substring(1);
+      }
+
+      Shared().lastCursorPosition = cursorPosition;
 
       TextSpan aiOverlay = TextSpan(
         text: Shared().aiResponse,

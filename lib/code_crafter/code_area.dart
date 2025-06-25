@@ -176,6 +176,7 @@ class _CodeCrafterState extends State<CodeCrafter> {
     _hoverHorizontalScroll = ScrollController();
     _hoverVerticalSCroll = ScrollController();
     widget.controller.text = widget.initialText ?? '';
+    widget.controller.manualAiCompletion = getManualAiSuggestion;
     if (widget.lspConfig != null) {
       widget.lspConfig!.responses.listen((data) {
         if (data['method'] == 'textDocument/publishDiagnostics') {
@@ -359,6 +360,8 @@ class _CodeCrafterState extends State<CodeCrafter> {
             Duration(milliseconds: widget.aiCompletion!.debounceTime),
             () async {
               Shared().aiResponse = await _getCachedRsponse(codeToSend);
+              Shared().lastCursorPosition =
+                  widget.controller.selection.baseOffset;
               setState(() => _aiSuggestion = true);
             },
           );
@@ -924,7 +927,8 @@ class _CodeCrafterState extends State<CodeCrafter> {
               if (widget.aiCompletion != null &&
                   widget.aiCompletion!.enableCompletion &&
                   Shared().aiResponse != null &&
-                  Shared().aiResponse!.isNotEmpty)
+                  Shared().aiResponse!.isNotEmpty &&
+                  _aiSuggestion)
                 Positioned(
                   left: _caretRect.left,
                   right: _caretRect.right,
