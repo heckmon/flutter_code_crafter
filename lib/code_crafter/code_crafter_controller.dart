@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:highlight/highlight.dart';
 
 class CodeCrafterController extends TextEditingController {
+  VoidCallback? manualAiCompletion;
+
   Mode? _language;
 
   /// The language mode used for syntax highlighting.
@@ -510,6 +512,11 @@ class CodeCrafterController extends TextEditingController {
     final line = lines.length - 1;
     final character = lines.isNotEmpty ? lines.last.length : 0;
     return {'line': line, 'character': character};
+  }
+
+  /// Callback to show Ai sgggestion manually when the [AiCompletion.completionType] is [CompletionType.manual] or [CompletionType.mixed].
+  void getManualAiSuggestion() {
+    manualAiCompletion?.call();
   }
 
   /// Refreshes the controller, notifying all listeners.

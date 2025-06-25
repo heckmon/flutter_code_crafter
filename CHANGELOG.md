@@ -32,3 +32,8 @@
 
 * Fixed flicker in Ai code completion.
 * Added option to enable/disable suggestion.
+
+## 0.0.9
+
+* Added manual trigger for AI code completion.
+* Add Vertical divider line between gutter and editor.

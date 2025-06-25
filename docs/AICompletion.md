@@ -9,6 +9,8 @@ You can use the AI code completion feature in CodeCrafter to get code suggestion
 - `model`: An instance of the `Models` class, which can be one of the [built-in AI models](#built-in-ai-models) or a [custom model](#custom-ai-model).
 #### optional parameters:
 - `enableCompletion`: A boolean value to enable or disable AI code completion. Defaults to `true`.
+- `completionType`: The type of AI code completion. Defaults to `CompletionType.auto`.
+- `debounceTime`: The debounce time in milliseconds for AI code completion. Defaults to `1000`.
 
 create an instance of the `AiCompletion` class with any of the [built-in AI models](#built-in-ai-models) or [custom model](#custom-ai-model) and pass it to the `CodeCrafter` widget.
 Example of using Gemini AI completion:
@@ -47,6 +49,37 @@ CodeCrafter(
         fontStyle: FontStyle.italic, // Make the AI completion text italic
     ),
 ),
+```
+
+## Completion on Callback
+If you want to trigger AI code completion manually, you can use the `getManualAiCompletion()` callback in the `CodeCrafterController`. This callback will be called when the AI code completion is triggered.<br>
+In this example, a `FloatingActionButton` is used to trigger the AI code completion manually:
+
+```dart
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      home: Scaffold(
+        floatingActionButton: FloatingActionButton(onPressed: ()=> controller.getManualAiSuggestion()),
+        body: SafeArea(
+          child: CodeCrafter(
+            editorTheme: anOldHopeTheme,
+            controller: controller,
+            textStyle: GoogleFonts.notoSansMono(
+              fontSize: 15,
+            ),
+            aiCompletion: AiCompletion(
+              completionType: CompletionType.manual,
+              enableCompletion: true,
+              model: Gemini(
+                apiKey: apiKey,
+              )
+            ),
+          ),
+        )
+      ),
+    );
+  }
 ```
 
 ## Built-in AI Models

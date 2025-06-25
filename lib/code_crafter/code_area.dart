@@ -85,6 +85,9 @@ class CodeCrafter extends StatefulWidget {
   /// Not AI suggestions, but the suggestions from LSP or based on the text in the editor.
   final bool enableSuggestions;
 
+  /// whether to enable the vertical divider line between gutter and editor
+  final bool enableGutterDivider;
+
   /// Focus node for the underlying [TextField] in the [CodeCrafter] widget.
   final FocusNode? focusNode;
 
@@ -138,6 +141,7 @@ class CodeCrafter extends StatefulWidget {
     this.enableFolding = true,
     this.enableRulerLines = true,
     this.enableSuggestions = true,
+    this.enableGutterDivider = false,
     this.wrapLines = false,
     this.autoFocus = false,
     this.readOnly = false,
@@ -349,13 +353,16 @@ class _CodeCrafterState extends State<CodeCrafter> {
 
         _debounceTimer?.cancel();
 
-        _debounceTimer = Timer(
-          Duration(milliseconds: widget.aiCompletion!.debounceTime),
-          () async {
-            Shared().aiResponse = await _getCachedRsponse(codeToSend);
-            setState(() => _aiSuggestion = true);
-          },
-        );
+        if (widget.aiCompletion?.completionType == CompletionType.auto ||
+            widget.aiCompletion?.completionType == CompletionType.mixed) {
+          _debounceTimer = Timer(
+            Duration(milliseconds: widget.aiCompletion!.debounceTime),
+            () async {
+              Shared().aiResponse = await _getCachedRsponse(codeToSend);
+              setState(() => _aiSuggestion = true);
+            },
+          );
+        }
         _value = widget.controller.text;
       }
     });
@@ -721,6 +728,18 @@ class _CodeCrafterState extends State<CodeCrafter> {
     return aiResponse;
   }
 
+  Future<void> getManualAiSuggestion() async {
+    if (widget.aiCompletion?.completionType == CompletionType.manual ||
+        widget.aiCompletion?.completionType == CompletionType.mixed) {
+      final String text = widget.controller.text;
+      final int cursorPosition = widget.controller.selection.baseOffset;
+      final String codeToSend =
+          "${text.substring(0, cursorPosition)}<|CURSOR|>${text.substring(cursorPosition)}";
+      Shared().aiResponse = await _getCachedRsponse(codeToSend);
+      setState(() => _aiSuggestion = true);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final EditorField? editorField = widget.editorField?.copyWith(
@@ -765,6 +784,23 @@ class _CodeCrafterState extends State<CodeCrafter> {
                       widget.enableBreakPoints,
                       widget.enableFolding,
                     ),
+                    widget.enableGutterDivider
+                        ? Padding(
+                            padding: const EdgeInsets.only(right: 4),
+                            child: SizedBox(
+                              height: constraints.maxHeight,
+                              child: VerticalDivider(
+                                color:
+                                    widget.gutterStyle?.dividerColor ??
+                                    widget.editorTheme?['root']?.color ??
+                                    Colors.white,
+                                width: 0,
+                                thickness:
+                                    widget.gutterStyle?.dividerThickness ?? 0.3,
+                              ),
+                            ),
+                          )
+                        : SizedBox.shrink(),
                     Expanded(
                       child: KeyboardListener(
                         focusNode: _keyboardFocus,

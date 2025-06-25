@@ -41,8 +41,14 @@ class AiCompletion {
   /// The debounce time in milliseconds for AI completion requests. Defaults to 1000ms.
   int debounceTime;
 
+  /// Whether the completion is auto or manual
+  /// Use [CompletionType.auto] for automatic completion and [CompletionType.manual] to invoke the completion on a callback or [CompletionType.mixed] for both.
+  /// Defaults to [CompletionType.auto]
+  CompletionType completionType;
+
   AiCompletion({
     required this.model,
+    this.completionType = CompletionType.auto,
     this.debounceTime = 1000,
     this.enableCompletion = true,
   });
@@ -376,6 +382,7 @@ class FireWorks extends OpenAiCompatible {
 /// }
 ///```
 class CustomModel extends Models {
+  /// The URL for the custom AI service endpoint.
   @override
   final String url;
   @override
@@ -449,4 +456,23 @@ class CustomModel extends Models {
       throw Exception('Failed to complete request: $e');
     }
   }
+}
+
+/// Enum that defines the type of AI completion behavior.
+enum CompletionType {
+  /// Completion is triggered automatically based on the debounce time.
+  /// This is the default behavior.
+  auto,
+
+  /// Completion is triggered manually, typically through the getManualAiCompletion() callback in the [CodeCrafterController].
+  /// eg:
+  /// ```dart
+  /// controller.getManualAiCompletion();
+  /// ```
+  ///
+  /// Use this when you have a very limited number of requests to the AI service, or when you want to control when the AI completion is invoked.
+  manual,
+
+  /// Completion is triggered manually, but the AI service is invoked only when the user explicitly requests it.
+  mixed,
 }

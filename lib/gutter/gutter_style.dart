@@ -16,7 +16,10 @@ class GutterStyle {
 
   /// The color for the unfolded line folding indicator icon in the gutter. Defaults to [Colors.grey].
   final Color unfoldedIconColor;
-  // final Color? dividerColor;
+
+  /// Color of the vertical divider line between gutter and editor.
+  final Color? dividerColor;
+
   /// The size of the breakpoint icon in the gutter. Defaults to (widget?.textStyle?.fontSize ?? 14) * 0.6.
   ///
   /// Recommended to leave it null, because the default value is dynamic based on editor fontSize.
@@ -24,6 +27,9 @@ class GutterStyle {
 
   /// The width of the gutter. Dynamic by default, which means it can adapt best width based on line number. So recommended to leave it null.
   final double? gutterWidth;
+
+  /// The thickness of the vertical divider between gutter and editor.
+  final double? dividerThickness;
 
   /// The size of the folding icon in the gutter. Defaults to (widget?.textStyle?.fontSize ?? 14) * 1.2.
   ///
@@ -51,12 +57,13 @@ class GutterStyle {
   final IconData foldedIcon;
   GutterStyle({
     this.lineNumberStyle,
-    // this.dividerColor,
     this.gutterWidth,
     this.breakpointIcon = Icons.circle,
     this.unfilledBreakpointIcon = Icons.circle_outlined,
     this.foldedIcon = Icons.chevron_right_outlined,
     this.unfoldedIcon = Icons.keyboard_arrow_down_outlined,
+    this.dividerColor,
+    this.dividerThickness,
     this.breakpointSize,
     this.foldingIconSize,
     this.breakpointColor = Colors.red,
