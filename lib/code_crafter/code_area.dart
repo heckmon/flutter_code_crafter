@@ -80,6 +80,11 @@ class CodeCrafter extends StatefulWidget {
   /// Defaults to true.
   final bool enableRulerLines;
 
+  /// Whether to enable suggestions in the [CodeCrafter] widget.
+  /// Defaults to true.
+  /// Not AI suggestions, but the suggestions from LSP or based on the text in the editor.
+  final bool enableSuggestions;
+
   /// Focus node for the underlying [TextField] in the [CodeCrafter] widget.
   final FocusNode? focusNode;
 
@@ -132,6 +137,7 @@ class CodeCrafter extends StatefulWidget {
     this.enableBreakPoints = true,
     this.enableFolding = true,
     this.enableRulerLines = true,
+    this.enableSuggestions = true,
     this.wrapLines = false,
     this.autoFocus = false,
     this.readOnly = false,
@@ -291,7 +297,10 @@ class _CodeCrafterState extends State<CodeCrafter> {
               .toList();
         }
 
-        if (_recentlyTyped && _suggestions.isNotEmpty && cursorOffset > 0) {
+        if (_recentlyTyped &&
+            _suggestions.isNotEmpty &&
+            cursorOffset > 0 &&
+            widget.enableSuggestions) {
           _sortSuggestions(prefix);
           final triggerChar = currentText[cursorOffset - 1];
           if (!RegExp(r'[a-zA-Z]').hasMatch(triggerChar)) {
@@ -304,7 +313,8 @@ class _CodeCrafterState extends State<CodeCrafter> {
         }
       }
       if (widget.lspConfig != null &&
-          widget.controller.selection.baseOffset > 0) {
+          widget.controller.selection.baseOffset > 0 &&
+          widget.enableSuggestions) {
         (() async {
           await widget.lspConfig!.updateDocument(widget.controller.text);
           final List<LspCompletion> suggestion = await widget.lspConfig!
@@ -391,6 +401,16 @@ class _CodeCrafterState extends State<CodeCrafter> {
 
       return a is LspCompletion ? b.label.compareTo(a.label) : b.compareTo(a);
     });
+  }
+
+  void _insertAiSuggestion(String suggestion) {
+    final text = widget.controller.text;
+    final cursorPos = widget.controller.selection.baseOffset;
+    final newText = text.replaceRange(cursorPos, cursorPos, suggestion);
+    widget.controller.value = TextEditingValue(
+      text: newText,
+      selection: TextSelection.collapsed(offset: cursorPos + suggestion.length),
+    );
   }
 
   void _insertSuggestion(String suggestion) {
@@ -518,6 +538,7 @@ class _CodeCrafterState extends State<CodeCrafter> {
                 ),
             child: Focus(
               child: ListView.builder(
+                padding: EdgeInsets.zero,
                 itemExtent: (widget.textStyle?.fontSize ?? 14) + 5,
                 shrinkWrap: true,
                 itemCount: _suggestions.length,
@@ -901,7 +922,8 @@ class _CodeCrafterState extends State<CodeCrafter> {
                           ),
                           onPressed: () {
                             setState(() {
-                              _insertSuggestion(Shared().aiResponse!);
+                              if (Shared().aiResponse == null) return;
+                              _insertAiSuggestion(Shared().aiResponse!);
                               Future.delayed(Duration.zero);
                               Shared().aiResponse = null;
                             });
@@ -934,8 +956,10 @@ class _CodeCrafterState extends State<CodeCrafter> {
                               Colors.white,
                             ),
                           ),
-                          onPressed: () =>
-                              setState(() => Shared().aiResponse = null),
+                          onPressed: () => setState(() {
+                            if (Shared().aiResponse == null) return;
+                            Shared().aiResponse = null;
+                          }),
                           child: const Text(
                             "Reject",
                             style: TextStyle(fontSize: 9),

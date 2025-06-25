@@ -27,3 +27,8 @@
 ## 0.0.7
 
 * Removed dart:io import for web support.
+
+## 0.0.8
+
+* Fixed flicker in Ai code completion.
+* Added option to enable/disable suggestion.

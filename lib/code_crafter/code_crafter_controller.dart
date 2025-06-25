@@ -289,20 +289,15 @@ class CodeCrafterController extends TextEditingController {
           .parse(textBeforeCursor, language: _langId)
           .nodes;
 
+      final String ai = Shared().aiResponse!;
+
       if (_lastCursorPosition != null &&
           cursorPosition != _lastCursorPosition) {
-        if (lastTypedChar.trim().isEmpty ||
-            Shared().aiResponse![0] != lastTypedChar) {
+        if (ai.isEmpty || !ai.startsWith(lastTypedChar)) {
           Shared().aiResponse = null;
+        } else if (ai.startsWith(lastTypedChar)) {
+          Shared().aiResponse = ai.substring(1);
         }
-      }
-
-      if (Shared().aiResponse != null &&
-          Shared().aiResponse!.isNotEmpty &&
-          Shared().aiResponse![0] == lastTypedChar) {
-        Shared().aiResponse = Shared().aiResponse!.substring(1);
-      } else if (lastTypedChar.trim().isNotEmpty) {
-        Shared().aiResponse = null;
       }
 
       _lastCursorPosition = cursorPosition;
