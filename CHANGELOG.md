@@ -41,3 +41,7 @@
 ## 0.1.0
 
 * Fixed bug in AI code completion.
+
+## 0.1.1
+
+* Fixed blank suggestion bug.

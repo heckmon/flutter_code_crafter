@@ -266,7 +266,12 @@ class _CodeCrafterState extends State<CodeCrafter> {
       final line = lines.length - 1;
       final prefix = _getCurrentWordPrefix(currentText, cursorOffset);
       final character = lines.isNotEmpty ? lines.last.length : 0;
-      _recentlyTyped = currentText.length > oldVal.length;
+      final prevText = oldVal;
+      final prevOffset = _value.isNotEmpty ? _value.length : 0;
+      final isTyping =
+          currentText.length > prevText.length &&
+          cursorOffset == prevOffset + 1;
+      _recentlyTyped = isTyping;
       oldVal = currentText;
 
       if (_aiSuggestion && Shared().aiResponse == null) {
@@ -747,6 +752,7 @@ class _CodeCrafterState extends State<CodeCrafter> {
   Widget build(BuildContext context) {
     final EditorField? editorField = widget.editorField?.copyWith(
       onTap: () {
+        if (widget.lspConfig == null) return;
         _showDetailsOverlay();
         widget.editorField?.onTap?.call();
       },
@@ -887,6 +893,7 @@ class _CodeCrafterState extends State<CodeCrafter> {
                                   ) ??
                                   TextField(
                                     onTap: () {
+                                      if (widget.lspConfig == null) return;
                                       _showDetailsOverlay();
                                     },
                                     controller: widget.controller,

@@ -101,3 +101,55 @@ class _MainAppState extends State<MainApp> {
 This package contains `dart:io` import, so web supported may be limited. Also there is an issue with tab key when `wrapLines` property is set to false. This is a known issue with the underlying text editing library and will be fixed in future releases.
 
 Contributions are welcome! If you find any bugs or have any feature requests, please open an issue on the [GitHub repository](https://github.com/heckmon/fluter_code_crafter).
+
+## CodeCrafter Class
+```dart
+CodeCrafter({
+  super.key,
+    required this.controller,
+    this.initialText,
+    this.filePath,
+    this.focusNode,
+    this.textStyle,
+    this.gutterStyle,
+    this.editorTheme,
+    this.aiCompletion,
+    this.aiCompletionTextStyle,
+    this.lspConfig,
+    this.suggestionStyle,
+    this.hoverDetailsStyle,
+    this.selectionHandleColor,
+    this.selectionColor,
+    this.cursorColor,
+    this.enableBreakPoints = true,
+    this.enableFolding = true,
+    this.enableRulerLines = true,
+    this.enableSuggestions = true,
+    this.enableGutterDivider = false,
+    this.wrapLines = false,
+    this.autoFocus = false,
+    this.readOnly = false,
+    this.tabSize = 3,
+    this.editorField,
+})
+```
+
+## GutterStyle class
+```dart
+GutterStyle({
+    this.lineNumberStyle,
+    this.gutterWidth,
+    this.breakpointIcon = Icons.circle,
+    this.unfilledBreakpointIcon = Icons.circle_outlined,
+    this.foldedIcon = Icons.chevron_right_outlined,
+    this.unfoldedIcon = Icons.keyboard_arrow_down_outlined,
+    this.dividerColor,
+    this.dividerThickness,
+    this.breakpointSize,
+    this.foldingIconSize,
+    this.breakpointColor = Colors.red,
+    this.unfilledBreakpointColor = Colors.transparent,
+    this.foldedIconColor = Colors.grey,
+    this.unfoldedIconColor = Colors.grey,
+  });
+```
