@@ -380,13 +380,11 @@ class EditorField {
   }) {
     return EditorField(
       key: key ?? this.key,
-
       onChanged: onChanged ?? this.onChanged,
       onSubmitted: onSubmitted ?? this.onSubmitted,
       onTap: onTap ?? this.onTap,
       onEditingComplete: onEditingComplete ?? this.onEditingComplete,
       onTapOutside: onTapOutside ?? this.onTapOutside,
-
       keyboardType: keyboardType ?? this.keyboardType,
       textInputAction: textInputAction ?? this.textInputAction,
       inputFormatters: inputFormatters ?? this.inputFormatters,
@@ -394,7 +392,6 @@ class EditorField {
       obscureText: obscureText ?? this.obscureText,
       enableSuggestions: enableSuggestions ?? this.enableSuggestions,
       autocorrect: autocorrect ?? this.autocorrect,
-
       decoration: decoration ?? this.decoration,
       textAlign: textAlign ?? this.textAlign,
       style: style ?? this.style,
@@ -405,7 +402,6 @@ class EditorField {
       minLines: minLines ?? this.minLines,
       maxLength: maxLength ?? this.maxLength,
       maxLengthEnforcement: maxLengthEnforcement ?? this.maxLengthEnforcement,
-
       showCursor: showCursor ?? this.showCursor,
       cursorWidth: cursorWidth ?? this.cursorWidth,
       cursorHeight: cursorHeight ?? this.cursorHeight,
@@ -414,7 +410,6 @@ class EditorField {
       enableInteractiveSelection:
           enableInteractiveSelection ?? this.enableInteractiveSelection,
       selectionControls: selectionControls ?? this.selectionControls,
-
       scrollPhysics: scrollPhysics ?? this.scrollPhysics,
       scrollController: scrollController ?? this.scrollController,
       smartQuotesType: smartQuotesType ?? this.smartQuotesType,

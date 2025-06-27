@@ -49,3 +49,7 @@
 ## 0.1.2
 
 * Fixed folding issue with initialText.
+
+## 0.1.3
+
+* Fixed bug in suggestions overlay.

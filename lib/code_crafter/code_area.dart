@@ -167,6 +167,7 @@ class _CodeCrafterState extends State<CodeCrafter> {
   bool _recentlyTyped = false, _suggestionShown = false, _aiSuggestion = false;
   Rect _caretRect = Rect.zero;
   String? content;
+  TextEditingValue? _previousValue;
 
   @override
   void initState() {
@@ -256,7 +257,6 @@ class _CodeCrafterState extends State<CodeCrafter> {
     Shared().controller = widget.controller;
     Shared().tabSize = widget.tabSize;
     Shared().enableRulerLines = widget.enableRulerLines;
-    String oldVal = '';
     _value = widget.controller.text;
     widget.controller.addListener(() {
       final cursorOffset = widget.controller.selection.baseOffset;
@@ -266,20 +266,27 @@ class _CodeCrafterState extends State<CodeCrafter> {
       final line = lines.length - 1;
       final prefix = _getCurrentWordPrefix(currentText, cursorOffset);
       final character = lines.isNotEmpty ? lines.last.length : 0;
-      final prevText = oldVal;
-      final prevOffset = _value.isNotEmpty ? _value.length : 0;
-      final isTyping =
-          currentText.length > prevText.length &&
-          cursorOffset == prevOffset + 1;
-      _recentlyTyped = isTyping;
-      oldVal = currentText;
+      final currentValue = widget.controller.value;
+      final prevValue = _previousValue ?? currentValue;
+      bool isTyping = false;
+      if (currentValue.text.length == prevValue.text.length + 1 &&
+          currentValue.selection.baseOffset ==
+              prevValue.selection.baseOffset + 1) {
+        final insertedChar = currentValue.text.substring(
+          prevValue.selection.baseOffset,
+          currentValue.selection.baseOffset,
+        );
+        isTyping =
+            insertedChar.isNotEmpty &&
+            RegExp(r'[a-zA-Z]').hasMatch(insertedChar);
+      }
+      _previousValue = currentValue;
 
       if (_aiSuggestion && Shared().aiResponse == null) {
         setState(() {
           _aiSuggestion = false;
         });
       }
-
       if (widget.lspConfig == null) {
         final RegExp regExp = RegExp(r'\b\w+\b');
         final List<String> words = regExp
@@ -293,31 +300,32 @@ class _CodeCrafterState extends State<CodeCrafter> {
             currentWord = match.group(0)!;
           }
         }
-
         _suggestions.clear();
         for (var i in words) {
           if (!_suggestions.contains(i) && i != currentWord) {
             _suggestions.add(i);
           }
         }
-
         if (prefix.isNotEmpty) {
           _suggestions = _suggestions
               .where((s) => s.startsWith(prefix))
               .toList();
         }
 
-        if (_recentlyTyped &&
+        if (isTyping &&
             _suggestions.isNotEmpty &&
             cursorOffset > 0 &&
-            widget.enableSuggestions) {
+            widget.enableSuggestions &&
+            prefix.isNotEmpty) {
           _sortSuggestions(prefix);
           final triggerChar = currentText[cursorOffset - 1];
           if (!RegExp(r'[a-zA-Z]').hasMatch(triggerChar)) {
             _hideSuggestionOverlay();
             return;
           }
-          if (mounted) _showSuggestionOverlay();
+          if (mounted) {
+            _showSuggestionOverlay();
+          }
         } else {
           _hideSuggestionOverlay();
         }
