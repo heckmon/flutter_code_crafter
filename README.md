@@ -100,7 +100,7 @@ class _MainAppState extends State<MainApp> {
 
 This package contains `dart:io` import, so web supported may be limited. Also there is an issue with tab key when `wrapLines` property is set to false. This is a known issue with the underlying text editing library and will be fixed in future releases.
 
-Contributions are welcome! If you find any bugs or have any feature requests, please open an issue on the [GitHub repository](https://github.com/heckmon/fluter_code_crafter).
+Contributions are welcome! If you find any bugs or have any feature requests, please open an issue on the [GitHub repository](https://github.com/heckmon/flutter_code_crafter).
 
 ## CodeCrafter Class
 ```dart

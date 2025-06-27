@@ -45,3 +45,7 @@
 ## 0.1.1
 
 * Fixed blank suggestion bug.
+
+## 0.1.2
+
+* Fixed folding issue with initialText.

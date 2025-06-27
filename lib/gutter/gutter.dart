@@ -29,60 +29,56 @@ class _GutterState extends State<Gutter> {
   int lineNumber = 0;
   double? _gutterWidth;
 
+  void _updateLineStatesAndFolds() {
+    _textPainter = TextPainter(
+      textDirection: TextDirection.ltr,
+      text: TextSpan(text: _controller.text),
+    )..layout();
+    final oldStates = _lineStates.value;
+    final updatedStates = List.generate(
+      _textPainter.computeLineMetrics().length,
+      (index) {
+        if (index < oldStates.length) {
+          return oldStates[index];
+        } else {
+          return LineState(lineNumber: index + 1);
+        }
+      },
+    );
+    lineNumber = _textPainter.computeLineMetrics().length;
+    _lineStates.value = updatedStates;
+    Shared().lineStates = _lineStates;
+    _getFoldRanges(_controller.text, _lineStates);
+    int digitCount = max(3, lineNumber.toString().length);
+    TextPainter gutterPainter = TextPainter(
+      textDirection: TextDirection.ltr,
+      text: TextSpan(
+        text: List.filled(digitCount, "8").join(),
+        style:
+            Shared().textStyle?.copyWith(height: 1.5) ?? TextStyle(height: 1.5),
+      ),
+    )..layout();
+    _gutterWidth = widget.gutterStyle.gutterWidth ?? gutterPainter.width * 2.1;
+    Shared().gutterWidth = _gutterWidth ?? 65;
+    setState(() {});
+  }
+
   @override
   void initState() {
     final lineMetrics = TextPainter(
       textDirection: TextDirection.ltr,
       text: TextSpan(text: _controller.text),
     )..layout();
-
     lineNumber = lineMetrics.computeLineMetrics().length;
 
     _lineStates = ValueNotifier(
       List.generate(lineNumber, (index) => LineState(lineNumber: index + 1)),
     );
 
-    _listenerFunction = () {
-      _textPainter = TextPainter(
-        textDirection: TextDirection.ltr,
-        text: TextSpan(text: _controller.text),
-      )..layout();
-      if (lineNumber != _textPainter.computeLineMetrics().length) {
-        final oldStates = _lineStates.value;
-        final updatedStates = List.generate(
-          _textPainter.computeLineMetrics().length,
-          (index) {
-            if (index < oldStates.length) {
-              return oldStates[index];
-            } else {
-              return LineState(lineNumber: index + 1);
-            }
-          },
-        );
-
-        setState(() {
-          lineNumber = _textPainter.computeLineMetrics().length;
-          _lineStates.value = updatedStates;
-          Shared().lineStates = _lineStates;
-        });
-      }
-      _getFoldRanges(_controller.text, _lineStates);
-      int digitCount = max(3, lineNumber.toString().length);
-      TextPainter gutterPainter = TextPainter(
-        textDirection: TextDirection.ltr,
-        text: TextSpan(
-          text: List.filled(digitCount, "8").join(),
-          style:
-              Shared().textStyle?.copyWith(height: 1.5) ??
-              TextStyle(height: 1.5),
-        ),
-      )..layout();
-      _gutterWidth =
-          widget.gutterStyle.gutterWidth ?? gutterPainter.width * 2.1;
-      Shared().gutterWidth = _gutterWidth ?? 65;
-    };
-
+    _listenerFunction = _updateLineStatesAndFolds;
     _controller.addListener(_listenerFunction);
+
+    _updateLineStatesAndFolds();
     super.initState();
   }
 
