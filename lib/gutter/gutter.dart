@@ -48,7 +48,7 @@ class _GutterState extends State<Gutter> {
     lineNumber = _textPainter.computeLineMetrics().length;
     _lineStates.value = updatedStates;
     Shared().lineStates = _lineStates;
-    _getFoldRanges(_controller.text, _lineStates);
+    if (widget.enableFolding) _getFoldRanges(_controller.text, _lineStates);
     int digitCount = max(3, lineNumber.toString().length);
     TextPainter gutterPainter = TextPainter(
       textDirection: TextDirection.ltr,
@@ -99,7 +99,7 @@ class _GutterState extends State<Gutter> {
           List<bool> visibleLines = List.filled(lines.length, true);
           for (int i = 0; i < lines.length; i++) {
             final line = lines[i];
-            if (line.foldRange != null && line.foldRange!.isFolded) {
+            if (line.foldRange != null && line.foldRange!.isFolded && widget.enableFolding) {
               for (
                 int j = line.foldRange!.startLine;
                 j < line.foldRange!.endLine;
@@ -168,7 +168,7 @@ class _GutterState extends State<Gutter> {
                       )
                     : SizedBox.shrink(),
                 line.lineNumber,
-                rightItem: line.foldRange != null
+                rightItem: (line.foldRange != null && widget.enableFolding)
                     ? GestureDetector(
                         onTap: () {
                           setState(() {

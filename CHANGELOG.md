@@ -53,3 +53,7 @@
 ## 0.1.3
 
 * Fixed bug in suggestions overlay.
+
+## 0.1.4
+
+* Added option to enable/disable code folding.
