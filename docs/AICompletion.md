@@ -104,7 +104,6 @@ In this example, a `FloatingActionButton` is used to trigger the AI code complet
 #### required parameters:
 - `apiKey` : Your Claude API key.
 - `model` : The model to use for completion.
-- `version` : The version of the Claude model to use.
 
 ### 4. `Grok()`
 #### required parameters:

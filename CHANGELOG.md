@@ -57,3 +57,7 @@
 ## 0.1.4
 
 * Added option to enable/disable code folding.
+
+## 0.1.5
+
+* Removed version parameter from Claude model as it is not required anymore.

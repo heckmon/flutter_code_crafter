@@ -228,9 +228,8 @@ class OpenAI extends Models {
 class Claude extends Models {
   @override
   final String url = 'https://api.anthropic.com/v1/messages', apiKey, model;
-  final String version;
 
-  Claude({required this.apiKey, required this.version, required this.model});
+  Claude({required this.apiKey, required this.model});
 
   @override
   String responseParser(dynamic response) {
@@ -247,7 +246,6 @@ class Claude extends Models {
   Map<String, String> get headers => {
     'Content-Type': 'application/json',
     'x-api-key': apiKey,
-    'anthropic-version': version,
   };
 
   @override
