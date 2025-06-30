@@ -164,7 +164,7 @@ class _CodeCrafterState extends State<CodeCrafter> {
   OverlayEntry? _suggestionOverlay, _detailsOverlay;
   List<dynamic> _suggestions = [];
   List<LspErrors> _diagnostics = [];
-  bool _recentlyTyped = false, _suggestionShown = false, _aiSuggestion = false;
+  bool _suggestionShown = false, _aiSuggestion = false;
   Rect _caretRect = Rect.zero;
   String? content;
   TextEditingValue? _previousValue;
@@ -338,7 +338,7 @@ class _CodeCrafterState extends State<CodeCrafter> {
           final List<LspCompletion> suggestion = await widget.lspConfig!
               .getCompletions(line, character);
           _hoverDetails = await widget.lspConfig!.getHover(line, character);
-          if (_recentlyTyped && suggestion.isNotEmpty && cursorOffset > 0) {
+          if (suggestion.isNotEmpty && cursorOffset > 0) {
             _suggestions = suggestion;
             _selected = 0;
             _sortSuggestions(prefix);
@@ -507,10 +507,15 @@ class _CodeCrafterState extends State<CodeCrafter> {
       TextPosition(offset: widget.controller.selection.baseOffset),
     );
 
-    final Offset globalTopLeft = renderEditable.localToGlobal(caret.topLeft);
+    final RenderBox? ancestorBox = context.findRenderObject() as RenderBox?;
+    if (ancestorBox == null) return Rect.zero;
+
+    final Offset caretTopLeftGlobal = renderEditable.localToGlobal(caret.topLeft);
+    final Offset caretTopLeftLocal = ancestorBox.globalToLocal(caretTopLeftGlobal);
+
     final rect = Rect.fromLTWH(
-      globalTopLeft.dx,
-      globalTopLeft.dy,
+      caretTopLeftLocal.dx,
+      caretTopLeftLocal.dy,
       caret.width,
       caret.height,
     );
@@ -950,32 +955,30 @@ class _CodeCrafterState extends State<CodeCrafter> {
                   top:
                       _caretRect.top +
                       _caretRect.height +
-                      (Shared().aiResponse!.split('\n').length *
+                      ((Shared().aiResponse!.split('\n').length + 1.5) *
                           (widget.textStyle?.fontSize ?? 14)),
                   child: Row(
                     children: [
                       SizedBox(
                         width: 55,
                         height: _caretRect.height,
-                        child: TextButton(
-                          style: ButtonStyle(
-                            shape: WidgetStatePropertyAll(
-                              RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(3),
-                                side: BorderSide(
-                                  color: Colors.white,
-                                  width: 0.2,
-                                ),
+                        child: InkWell(
+                          child: Container(
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              color: Colors.blueAccent,
+                              border: BoxBorder.all(
+                                width: 0.2,
+                                color: Colors.white,
                               ),
+                              borderRadius: BorderRadius.circular(3),
                             ),
-                            backgroundColor: WidgetStatePropertyAll(
-                              Colors.blueAccent,
-                            ),
-                            foregroundColor: WidgetStatePropertyAll(
-                              Colors.white,
-                            ),
+                          child: const Text(
+                            "Accept",
+                            style: TextStyle(fontSize: 9, color: Colors.white, fontWeight: FontWeight.bold),
                           ),
-                          onPressed: () {
+                          ),
+                          onTap: () {
                             setState(() {
                               if (Shared().aiResponse == null) return;
                               _insertAiSuggestion(Shared().aiResponse!);
@@ -983,42 +986,32 @@ class _CodeCrafterState extends State<CodeCrafter> {
                               Shared().aiResponse = null;
                             });
                           },
-                          child: const Text(
-                            "Accept",
-                            style: TextStyle(fontSize: 9),
-                          ),
                         ),
                       ),
                       const SizedBox(width: 5),
                       SizedBox(
                         width: 55,
                         height: _caretRect.height,
-                        child: TextButton(
-                          style: ButtonStyle(
-                            shape: WidgetStatePropertyAll(
-                              RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(3),
-                                side: BorderSide(
-                                  color: Colors.white,
-                                  width: 0.2,
-                                ),
+                        child: InkWell(
+                          child: Container(
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(3),
+                              color: Colors.redAccent,
+                              border: Border.all(
+                                color: Colors.white,
+                                width: 0.2,
                               ),
                             ),
-                            backgroundColor: WidgetStatePropertyAll(
-                              Colors.blueAccent,
-                            ),
-                            foregroundColor: WidgetStatePropertyAll(
-                              Colors.white,
+                            child: const Text(
+                              "Reject",
+                              style: TextStyle(fontSize: 9, color: Colors.white, fontWeight: FontWeight.bold),
                             ),
                           ),
-                          onPressed: () => setState(() {
+                          onTap: () => setState(() {
                             if (Shared().aiResponse == null) return;
                             Shared().aiResponse = null;
                           }),
-                          child: const Text(
-                            "Reject",
-                            style: TextStyle(fontSize: 9),
-                          ),
                         ),
                       ),
                     ],

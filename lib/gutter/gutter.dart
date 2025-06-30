@@ -99,9 +99,7 @@ class _GutterState extends State<Gutter> {
           List<bool> visibleLines = List.filled(lines.length, true);
           for (int i = 0; i < lines.length; i++) {
             final line = lines[i];
-            if (line.foldRange != null &&
-                line.foldRange!.isFolded &&
-                widget.enableFolding) {
+            if (line.foldRange != null && line.foldRange!.isFolded && widget.enableFolding) {
               for (
                 int j = line.foldRange!.startLine;
                 j < line.foldRange!.endLine;

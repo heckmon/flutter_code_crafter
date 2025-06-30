@@ -61,3 +61,7 @@
 ## 0.1.5
 
 * Removed version parameter from Claude model as it is not required anymore.
+
+## 0.1.6
+
+* Fixed AI suggestion accept/reject button issue.
