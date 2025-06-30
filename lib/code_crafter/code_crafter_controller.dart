@@ -532,7 +532,7 @@ class CodeCrafterController extends TextEditingController {
     return {'line': line, 'character': character};
   }
 
-  /// Callback to show Ai sgggestion manually when the [AiCompletion.completionType] is [CompletionType.manual] or [CompletionType.mixed].
+  /// Callback to show Ai suggestion manually when the [AiCompletion.completionType] is [CompletionType.manual] or [CompletionType.mixed].
   void getManualAiSuggestion() {
     manualAiCompletion?.call();
   }

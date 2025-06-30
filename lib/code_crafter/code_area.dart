@@ -372,7 +372,7 @@ class _CodeCrafterState extends State<CodeCrafter> {
           _debounceTimer = Timer(
             Duration(milliseconds: widget.aiCompletion!.debounceTime),
             () async {
-              Shared().aiResponse = await _getCachedRsponse(codeToSend);
+              Shared().aiResponse = await _getCachedResponse(codeToSend);
               Shared().lastCursorPosition =
                   widget.controller.selection.baseOffset;
               setState(() => _aiSuggestion = true);
@@ -494,7 +494,7 @@ class _CodeCrafterState extends State<CodeCrafter> {
     return result;
   }
 
-  Rect _globalCaretRect() {
+  Rect _globalCaretRect({bool global = false}) {
     final ctx = _codeFocus.context;
     if (ctx == null) return Rect.zero;
 
@@ -507,26 +507,39 @@ class _CodeCrafterState extends State<CodeCrafter> {
       TextPosition(offset: widget.controller.selection.baseOffset),
     );
 
-    final RenderBox? ancestorBox = context.findRenderObject() as RenderBox?;
-    if (ancestorBox == null) return Rect.zero;
-
-    final Offset caretTopLeftGlobal = renderEditable.localToGlobal(caret.topLeft);
-    final Offset caretTopLeftLocal = ancestorBox.globalToLocal(caretTopLeftGlobal);
-
-    final rect = Rect.fromLTWH(
-      caretTopLeftLocal.dx,
-      caretTopLeftLocal.dy,
-      caret.width,
-      caret.height,
-    );
-    return rect;
+    if (global) {
+      final Offset caretTopLeftGlobal = renderEditable.localToGlobal(
+        caret.topLeft,
+      );
+      return Rect.fromLTWH(
+        caretTopLeftGlobal.dx,
+        caretTopLeftGlobal.dy,
+        caret.width,
+        caret.height,
+      );
+    } else {
+      final RenderBox? ancestorBox = context.findRenderObject() as RenderBox?;
+      if (ancestorBox == null) return Rect.zero;
+      final Offset caretTopLeftGlobal = renderEditable.localToGlobal(
+        caret.topLeft,
+      );
+      final Offset caretTopLeftLocal = ancestorBox.globalToLocal(
+        caretTopLeftGlobal,
+      );
+      return Rect.fromLTWH(
+        caretTopLeftLocal.dx,
+        caretTopLeftLocal.dy,
+        caret.width,
+        caret.height,
+      );
+    }
   }
 
   void _showSuggestionOverlay() {
     _suggestionOverlay?.remove();
     _suggestionShown = true;
     final OverlayState overlay = Overlay.of(context);
-    final Rect caretGlobal = _globalCaretRect();
+    final Rect caretGlobal = _globalCaretRect(global: true);
     final double screenHeight = MediaQuery.of(context).size.height;
     final double screenWidth = MediaQuery.of(context).size.width;
     const double overlayWidth = 250.0, maxOverlayHeight = 300.0;
@@ -637,7 +650,7 @@ class _CodeCrafterState extends State<CodeCrafter> {
     _hideDetailsOverlay();
     if (_hoverDetails.isEmpty && _codeFocus.hasFocus) return;
     final OverlayState overlay = Overlay.of(context);
-    final Rect caretGlobal = _globalCaretRect();
+    final Rect caretGlobal = _globalCaretRect(global: true);
     final double screenHeight = MediaQuery.of(context).size.height;
     final double screenWidth = MediaQuery.of(context).size.width;
     const double overlayWidth = 250.0, maxOverlayHeight = 300.0;
@@ -738,7 +751,7 @@ class _CodeCrafterState extends State<CodeCrafter> {
     return null;
   }
 
-  Future<String> _getCachedRsponse(String codeToSend) async {
+  Future<String> _getCachedResponse(String codeToSend) async {
     final String key = codeToSend.hashCode.toString();
     if (cachedResponse.containsKey(key)) {
       return cachedResponse[key]!;
@@ -756,7 +769,8 @@ class _CodeCrafterState extends State<CodeCrafter> {
       final int cursorPosition = widget.controller.selection.baseOffset;
       final String codeToSend =
           "${text.substring(0, cursorPosition)}<|CURSOR|>${text.substring(cursorPosition)}";
-      Shared().aiResponse = await _getCachedRsponse(codeToSend);
+      Shared().aiResponse = await _getCachedResponse(codeToSend);
+      Shared().lastCursorPosition = widget.controller.selection.baseOffset;
       setState(() => _aiSuggestion = true);
     }
   }
@@ -973,10 +987,14 @@ class _CodeCrafterState extends State<CodeCrafter> {
                               ),
                               borderRadius: BorderRadius.circular(3),
                             ),
-                          child: const Text(
-                            "Accept",
-                            style: TextStyle(fontSize: 9, color: Colors.white, fontWeight: FontWeight.bold),
-                          ),
+                            child: const Text(
+                              "Accept",
+                              style: TextStyle(
+                                fontSize: 9,
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                           ),
                           onTap: () {
                             setState(() {
@@ -1005,7 +1023,11 @@ class _CodeCrafterState extends State<CodeCrafter> {
                             ),
                             child: const Text(
                               "Reject",
-                              style: TextStyle(fontSize: 9, color: Colors.white, fontWeight: FontWeight.bold),
+                              style: TextStyle(
+                                fontSize: 9,
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           ),
                           onTap: () => setState(() {

@@ -64,4 +64,6 @@
 
 ## 0.1.6
 
-* Fixed AI suggestion accept/reject button issue.
+* Fix: AI suggestion accept/reject button issue.
+* Fix: flicker in manual AI suggestion.
+* Fix: Position issue in LSP suggestion.
