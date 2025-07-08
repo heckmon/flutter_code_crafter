@@ -153,3 +153,6 @@ GutterStyle({
     this.unfoldedIconColor = Colors.grey,
   });
 ```
+
+## Sample App Image
+<img src="https://files.catbox.moe/v52e0r.jpg" height = "775" width = "375">

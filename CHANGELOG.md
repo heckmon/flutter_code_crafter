@@ -67,3 +67,7 @@
 * Fix: AI suggestion accept/reject button issue.
 * Fix: flicker in manual AI suggestion.
 * Fix: Position issue in LSP suggestion.
+
+## 0.1.7
+
+* Enhanced file handling

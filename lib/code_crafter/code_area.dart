@@ -201,15 +201,6 @@ class _CodeCrafterState extends State<CodeCrafter> {
         }
       });
     }
-    if (widget.filePath != null) {
-      (() async {
-        content = await FileLoader().readFile(widget.filePath!);
-        widget.controller.value = TextEditingValue(
-          text: content ?? '',
-          selection: TextSelection.collapsed(offset: content?.length ?? 0),
-        );
-      })();
-    }
     if (kIsWeb) {
       if (widget.filePath != null) {
         throw PlatformException(
@@ -225,6 +216,15 @@ class _CodeCrafterState extends State<CodeCrafter> {
               "LSP is not supported on web in the current version; support may be added in the future\n",
         );
       }
+    }
+    if (widget.filePath != null) {
+      (() async {
+        content = await FileLoader().readFile(widget.filePath!);
+        widget.controller.value = TextEditingValue(
+          text: content ?? '',
+          selection: TextSelection.collapsed(offset: content?.length ?? 0),
+        );
+      })();
     }
     if (widget.initialText != null && widget.filePath != null) {
       throw Exception(
