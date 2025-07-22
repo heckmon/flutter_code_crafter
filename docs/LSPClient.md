@@ -70,7 +70,7 @@ Future<LspConfig?> _initLsp() async {
     try {
       final config = await LspStdioConfig.start(
         executable: '/home/athul/.nvm/versions/node/v20.19.2/bin/pyright-langserver',
-        args: ['--stdio']
+        args: ['--stdio'],
         filePath: '/home/athul/Projects/lsp/example.py',
         workspacePath: '/home/athul/Projects/lsp',
         languageId: 'python',
