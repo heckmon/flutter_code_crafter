@@ -71,3 +71,7 @@
 ## 0.1.7
 
 * Enhanced file handling
+
+## 0.1.8
+
+* Removed web support
