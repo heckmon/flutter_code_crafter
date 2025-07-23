@@ -68,7 +68,7 @@ class LspStdioConfig extends LspConfig {
 
   /// Optional environement variables for the executable.
   final Map<String, String>? environment;
-  
+
   late Process _process;
   final _buffer = <int>[];
 
@@ -78,7 +78,7 @@ class LspStdioConfig extends LspConfig {
     required super.workspacePath,
     required super.languageId,
     this.args,
-    this.environment
+    this.environment,
   });
 
   static Future<LspStdioConfig> start({
@@ -87,7 +87,7 @@ class LspStdioConfig extends LspConfig {
     required String workspacePath,
     required String languageId,
     List<String>? args,
-    Map<String, String>? environment
+    Map<String, String>? environment,
   }) async {
     final config = LspStdioConfig._(
       executable: executable,
@@ -95,7 +95,7 @@ class LspStdioConfig extends LspConfig {
       languageId: languageId,
       workspacePath: workspacePath,
       args: args,
-      environment: environment
+      environment: environment,
     );
     await config._startProcess();
     return config;
@@ -105,7 +105,7 @@ class LspStdioConfig extends LspConfig {
     _process = await Process.start(
       executable,
       args ?? [],
-      environment: environment
+      environment: environment,
     );
     _process.stdout.listen(_handleStdoutData);
     _process.stderr.listen(
