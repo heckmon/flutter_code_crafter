@@ -75,3 +75,7 @@
 ## 0.1.8
 
 * Removed web support
+
+## 0.1.9
+
+Added environement variable support for LspStdio.

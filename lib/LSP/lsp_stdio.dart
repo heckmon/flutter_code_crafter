@@ -63,8 +63,12 @@ class LspStdioConfig extends LspConfig {
   ///```
   final String executable;
 
-  /// Optional arguments to pass to the LSP executable.
+  /// Optional arguments for the executable.
   final List<String>? args;
+
+  /// Optional environement variables for the executable.
+  final Map<String, String>? environment;
+  
   late Process _process;
   final _buffer = <int>[];
 
@@ -73,7 +77,8 @@ class LspStdioConfig extends LspConfig {
     required super.filePath,
     required super.workspacePath,
     required super.languageId,
-    this.args = const [],
+    this.args,
+    this.environment
   });
 
   static Future<LspStdioConfig> start({
@@ -82,6 +87,7 @@ class LspStdioConfig extends LspConfig {
     required String workspacePath,
     required String languageId,
     List<String>? args,
+    Map<String, String>? environment
   }) async {
     final config = LspStdioConfig._(
       executable: executable,
@@ -89,13 +95,18 @@ class LspStdioConfig extends LspConfig {
       languageId: languageId,
       workspacePath: workspacePath,
       args: args,
+      environment: environment
     );
     await config._startProcess();
     return config;
   }
 
   Future<void> _startProcess() async {
-    _process = await Process.start(executable, args ?? []);
+    _process = await Process.start(
+      executable,
+      args ?? [],
+      environment: environment
+    );
     _process.stdout.listen(_handleStdoutData);
     _process.stderr.listen(
       (data) => throw Exception('LSP process error: ${utf8.decode(data)}'),
