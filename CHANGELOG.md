@@ -78,4 +78,8 @@
 
 ## 0.1.9
 
-Added environement variable support for LspStdio.
+* Added environement variable support for LspStdio.
+
+## 0.2.0
+
+* Fix:LSP Suggestion conflicts with LSP hover.

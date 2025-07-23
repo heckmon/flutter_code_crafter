@@ -337,7 +337,10 @@ class _CodeCrafterState extends State<CodeCrafter> {
           final List<LspCompletion> suggestion = await widget.lspConfig!
               .getCompletions(line, character);
           _hoverDetails = await widget.lspConfig!.getHover(line, character);
-          if (suggestion.isNotEmpty && cursorOffset > 0) {
+          if (isTyping &&
+              suggestion.isNotEmpty &&
+              cursorOffset > 0 &&
+              prefix.isNotEmpty) {
             _suggestions = suggestion;
             _selected = 0;
             _sortSuggestions(prefix);
