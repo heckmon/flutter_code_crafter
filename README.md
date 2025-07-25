@@ -1,4 +1,4 @@
-A powerful and feature-rich code editor for flutter, designed to bring a seamless and efficient coding experience 
+A powerful and feature-rich code editor package for flutter, designed to bring a seamless and efficient coding experience.
 
 
 > [!NOTE]
