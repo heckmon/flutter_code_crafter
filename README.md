@@ -1,7 +1,7 @@
 A powerful and feature-rich code editor for flutter, designed to bring a seamless and efficient coding experience 
 
 
-> \[!NOTE]:
+> NOTE:
 >
 > This package is originally developed as part of an Android IDE app that I'm currently working on, so it's optimized for mobile use. PC specific features like extra keyboard shortcuts aren't included by default. If you'd like to add support for those, feel > free to open a pull request. I'm currently tied up with college and academics, contributions are welcome!
 
