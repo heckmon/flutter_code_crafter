@@ -11,7 +11,9 @@ A powerful and feature-rich code editor for flutter, designed to bring a seamles
 <a href="https://www.buymeacoffee.com/bames_jond">
     <img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" width="70" height="21">  </a>
 
->Note: Web support has been removed since 0.1.8 because of some conflicts with dart:io. A seperate package `flutter_code_crafter_web` will be released soon for web.
+> [!NOTE]
+> 
+> Web support has been removed since 0.1.8 because of some conflicts with dart:io. A seperate package `flutter_code_crafter_web` will be released soon for web.
 
 ## Features
 
