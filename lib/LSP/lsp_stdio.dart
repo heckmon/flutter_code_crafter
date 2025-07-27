@@ -108,9 +108,7 @@ class LspStdioConfig extends LspConfig {
       environment: environment,
     );
     _process.stdout.listen(_handleStdoutData);
-    _process.stderr.listen(
-      (data) => throw Exception('LSP process error: ${utf8.decode(data)}'),
-    );
+    _process.stderr.listen((data) => debugPrint(utf8.decode(data)));
   }
 
   void _handleStdoutData(List<int> data) {

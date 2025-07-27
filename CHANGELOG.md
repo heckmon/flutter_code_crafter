@@ -86,4 +86,8 @@
 
 ## 0.2.1
 
-*  Enhance: LSP suggestion
+* Enhance: LSP suggestion
+
+## 0.2.2
+
+* Enhance: LSP suggestion
