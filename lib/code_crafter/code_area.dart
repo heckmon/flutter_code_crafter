@@ -1,5 +1,5 @@
-import 'dart:async';
 import 'dart:io';
+import 'dart:async';
 import '../LSP/lsp.dart';
 import '../utils/utils.dart';
 import '../utils/shared.dart';
@@ -167,6 +167,7 @@ class _CodeCrafterState extends State<CodeCrafter> {
   Rect _caretRect = Rect.zero;
   String? content;
   TextEditingValue? _previousValue;
+  bool _lspReady = false;
 
   @override
   void initState() {
@@ -243,9 +244,13 @@ class _CodeCrafterState extends State<CodeCrafter> {
             await (widget.lspConfig as LspSocketConfig).connect();
           }
           await widget.lspConfig!.initialize();
+          await Future.delayed(const Duration(milliseconds: 300));
           await widget.lspConfig!.openDocument();
+          setState(() {
+            _lspReady = true;
+          });
         } catch (e) {
-          widget.controller.text = '';
+          debugPrint('Error initializing LSP: $e');
         }
       })();
     }
@@ -331,7 +336,8 @@ class _CodeCrafterState extends State<CodeCrafter> {
       }
       if (widget.lspConfig != null &&
           widget.controller.selection.baseOffset > 0 &&
-          widget.enableSuggestions) {
+          widget.enableSuggestions &&
+          _lspReady) {
         (() async {
           await widget.lspConfig!.updateDocument(widget.controller.text);
           final List<LspCompletion> suggestion = await widget.lspConfig!

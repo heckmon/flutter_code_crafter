@@ -83,3 +83,7 @@
 ## 0.2.0
 
 * Fix:LSP Suggestion conflicts with LSP hover.
+
+## 0.2.1
+
+*  Enhance: LSP suggestion

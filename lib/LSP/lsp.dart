@@ -50,12 +50,14 @@ sealed class LspConfig {
   /// This method is used internally by the [CodeCrafter] widget and calling it directly is not recommended.
   /// It may crash the LSP server if called multiple times.
   Future<void> initialize() async {
+    final workspaceUri = Uri.directory(workspacePath).toString();
     final response = await _sendRequest(
       method: 'initialize',
       params: {
         'processId': pid,
+        'rootUri': workspaceUri,
         'workspaceFolders': [
-          {'uri': Uri.file(workspacePath).toString(), 'name': 'workspace'},
+          {'uri': workspaceUri, 'name': 'workspace'},
         ],
         'capabilities': {
           'textDocument': {
@@ -90,6 +92,7 @@ sealed class LspConfig {
   Future<void> openDocument() async {
     final version = (_openDocuments[filePath] ?? 0) + 1;
     _openDocuments[filePath] = version;
+    final String text = await File(filePath).readAsString();
     await _sendNotification(
       method: 'textDocument/didOpen',
       params: {
@@ -97,7 +100,7 @@ sealed class LspConfig {
           'uri': Uri.file(filePath).toString(),
           'languageId': languageId,
           'version': version,
-          'text': await File(filePath).readAsString(),
+          'text': text,
         },
       },
     );
@@ -174,7 +177,7 @@ sealed class LspConfig {
       params: _commonParams(line, character),
     );
     if (response['result'] == null || response['result'].isEmpty) return '';
-    return response['result']['contents']['value'] ?? '';
+    return response['result']?['contents']?['value'] ?? '';
   }
 
   Future<String> getDefinition(int line, int character) async {
