@@ -95,3 +95,7 @@
 ## 0.2.3
 
 * Added Option to enable/disable LSP warning and error.
+
+## 0.2.4
+
+* Added Emoji support

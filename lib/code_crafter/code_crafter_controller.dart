@@ -134,8 +134,9 @@ class CodeCrafterController extends TextEditingController {
 
     String? currentStringQuote;
 
-    for (int i = 0; i < text.length; i++) {
-      final char = text[i];
+    final chars = text.characters;
+    for (int i = 0; i < chars.length; i++) {
+      final char = chars.elementAt(i);
 
       if (char == '"' || char == "'") {
         if (currentStringQuote == null) {
@@ -180,9 +181,9 @@ class CodeCrafterController extends TextEditingController {
     };
     const String openers = '({[';
 
-    if (pos < 0 || pos >= text.length) return null;
+    if (pos < 0 || pos >= text.characters.length) return null;
 
-    final char = text[pos];
+    final char = text.characters.elementAt(pos);
     if (!pairs.containsKey(char)) return null;
 
     final match = pairs[char]!;
@@ -190,17 +191,17 @@ class CodeCrafterController extends TextEditingController {
 
     int depth = 0;
     if (isForward) {
-      for (int i = pos + 1; i < text.length; i++) {
-        if (text[i] == char) depth++;
-        if (text[i] == match) {
+      for (int i = pos + 1; i < text.characters.length; i++) {
+        if (text.characters.elementAt(i) == char) depth++;
+        if (text.characters.elementAt(i) == match) {
           if (depth == 0) return i;
           depth--;
         }
       }
     } else {
       for (int i = pos - 1; i >= 0; i--) {
-        if (text[i] == char) depth++;
-        if (text[i] == match) {
+        if (text.characters.elementAt(i) == char) depth++;
+        if (text.characters.elementAt(i) == match) {
           if (depth == 0) return i;
           depth--;
         }
@@ -375,7 +376,9 @@ class CodeCrafterController extends TextEditingController {
         for (int lineIdx = 0; lineIdx < nodeLines.length; lineIdx++) {
           final line = nodeLines[lineIdx];
           final startOfLineOffset = offset;
-          offset += line.length + (lineIdx == nodeLines.length - 1 ? 0 : 1);
+          final lineChars = line.characters;
+          offset +=
+              lineChars.length + (lineIdx == nodeLines.length - 1 ? 0 : 1);
           final match = RegExp(r'^(\s*)').firstMatch(line);
           final leading = match?.group(0) ?? '';
           final indentLen = leading.length;
@@ -383,9 +386,9 @@ class CodeCrafterController extends TextEditingController {
           final Set<int> guideCols = {
             for (int k = 0; k < indentLvl; k++) k * Shared().tabSize,
           };
-          for (int col = 0; col < line.length; col++) {
+          for (int col = 0; col < lineChars.length; col++) {
             final globalIdx = startOfLineOffset + col;
-            String ch = line[col];
+            String ch = lineChars.elementAt(col);
             if (ch == ' ' && guideCols.contains(col)) ch = '│';
             final bool isMatch = globalIdx == b1 || globalIdx == b2;
             final bool isUnmatched = unmatched.contains(globalIdx);
