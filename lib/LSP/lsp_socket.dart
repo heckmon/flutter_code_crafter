@@ -34,6 +34,8 @@ class LspSocketConfig extends LspConfig {
     required super.workspacePath,
     required super.languageId,
     required this.serverUrl,
+    super.disableWarning,
+    super.disableError,
   }) : _channel = WebSocketChannel.connect(Uri.parse(serverUrl));
 
   /// This method is used to initialize the LSP server. and it's used internally by the [CodeCrafter] widget.

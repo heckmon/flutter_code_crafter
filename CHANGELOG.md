@@ -91,3 +91,7 @@
 ## 0.2.2
 
 * Enhance: LSP suggestion
+
+## 0.2.3
+
+* Added Option to enable/disable LSP warning and error.

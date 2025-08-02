@@ -79,6 +79,8 @@ class LspStdioConfig extends LspConfig {
     required super.languageId,
     this.args,
     this.environment,
+    super.disableWarning,
+    super.disableError,
   });
 
   static Future<LspStdioConfig> start({
@@ -88,6 +90,8 @@ class LspStdioConfig extends LspConfig {
     required String languageId,
     List<String>? args,
     Map<String, String>? environment,
+    bool disableWarning = false,
+    bool disableError = false,
   }) async {
     final config = LspStdioConfig._(
       executable: executable,
@@ -96,6 +100,8 @@ class LspStdioConfig extends LspConfig {
       workspacePath: workspacePath,
       args: args,
       environment: environment,
+      disableWarning: disableWarning,
+      disableError: disableError,
     );
     await config._startProcess();
     return config;

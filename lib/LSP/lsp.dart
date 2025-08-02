@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 
 import '../utils/utils.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
@@ -24,6 +25,13 @@ sealed class LspConfig {
   /// The workspacePath is the root directory of the project or workspace.
   /// If you are using a single file, you can set it to the parent directory of the file.
   final String workspacePath;
+
+  /// Whether to disable warnings from the LSP server.
+  final bool disableWarning;
+
+  /// Whether to disable errors from the LSP server.
+  final bool disableError;
+
   final StreamController<Map<String, dynamic>> _responseController =
       StreamController.broadcast();
   int _nextId = 1;
@@ -33,6 +41,8 @@ sealed class LspConfig {
     required this.filePath,
     required this.workspacePath,
     required this.languageId,
+    this.disableWarning = false,
+    this.disableError = false,
   });
 
   void dispose();
@@ -178,8 +188,22 @@ sealed class LspConfig {
       method: 'textDocument/hover',
       params: _commonParams(line, character),
     );
-    if (response['result'] == null || response['result'].isEmpty) return '';
-    return response['result']?['contents']?['value'] ?? '';
+    final contents = response['result']?['contents'];
+    if (contents == null || contents.isEmpty) return '';
+    if (contents is String) return contents;
+    if (contents is Map && contents.containsKey('value')) {
+      return contents['value'] ?? '';
+    }
+    if (contents is List && contents.isNotEmpty) {
+      return contents
+          .map((item) {
+            if (item is String) return item;
+            if (item is Map && item.containsKey('value')) return item['value'];
+            return '';
+          })
+          .join('\n');
+    }
+    return '';
   }
 
   Future<String> getDefinition(int line, int character) async {

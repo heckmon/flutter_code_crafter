@@ -420,7 +420,8 @@ class CodeCrafterController extends TextEditingController {
                           case 3:
                             return Colors.blueAccent;
                           default:
-                            return Colors.transparent;
+                            return editorTheme['root']?.backgroundColor ??
+                                Colors.black;
                         }
                       })(),
                     ).merge(Shared().textStyle);

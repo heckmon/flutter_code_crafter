@@ -189,7 +189,17 @@ class _CodeCrafterState extends State<CodeCrafter> {
             for (final (item as Map<String, dynamic>) in diagnostics) {
               errors.add(
                 LspErrors(
-                  severity: item['severity'],
+                  severity: (() {
+                    if (item['severity'] == 1 &&
+                        widget.lspConfig!.disableError) {
+                      return 0;
+                    }
+                    if (item['severity'] == 2 &&
+                        widget.lspConfig!.disableWarning) {
+                      return 0;
+                    }
+                    return item['severity'];
+                  })(),
                   range: item['range'],
                   message: item['message'],
                 ),
@@ -409,7 +419,13 @@ class _CodeCrafterState extends State<CodeCrafter> {
   @override
   void dispose() {
     _keyboardFocus.dispose();
+    _suggestionFocus.dispose();
+    _codeFocus.dispose();
+    _hoverHorizontalScroll.dispose();
+    _hoverVerticalSCroll.dispose();
     _debounceTimer?.cancel();
+    widget.lspConfig?.closeDocument();
+    widget.lspConfig?.dispose();
     super.dispose();
   }
 
