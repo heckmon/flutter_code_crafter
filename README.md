@@ -1,9 +1,9 @@
-A powerful and feature-rich code editor package for flutter, designed to bring a seamless and efficient coding experience.
+A powerful and feature-rich alternative for [flutter_code_editor](https://pub.dev/packages/flutter_code_editor) and [code_text_field](https://pub.dev/documentation/code_text_field). Designed to bring a seamless and efficient coding experience.
 
 
 > [!NOTE]
 >
-> This package is originally developed as part of an Android IDE app that I'm currently working on, so it's optimized for mobile use. PC specific features like extra keyboard shortcuts aren't included by default. If you'd like to add support for those, feel > free to open a pull request. I'm currently tied up with college and academics, contributions are welcome!
+> This package is originally developed as part of an Android IDE app that I'm currently working on, so it's optimized for mobile use. PC specific features like extra keyboard shortcuts aren't included by default. If you'd like to add support for those, feel free to open a pull request. I'm currently tied up with college and academics, contributions are welcome!
 
 [![pub package](https://img.shields.io/pub/v/flutter_code_crafter.svg?cacheSeconds=60)](https://pub.dev/packages/flutter_code_crafter)
 ![GitHub license](https://img.shields.io/github/license/heckmon/flutter_code_crafter.svg)
@@ -48,7 +48,9 @@ A powerful and feature-rich code editor package for flutter, designed to bring a
 
 <br>
 
-> #### Note : The above features works on all supported languages, I just used python for the demo.<br> You can use any language with corresponding LSP server to get hover details and suggestions similar to VScode.
+> [!NOTE]
+>
+> The above features works on all supported languages, I just used python for the demo.<br> You can use any language with corresponding LSP server to get hover details and suggestions similar to VScode.
 
 ## Usage
 
