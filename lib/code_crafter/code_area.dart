@@ -176,7 +176,7 @@ class _CodeCrafterState extends State<CodeCrafter> {
     _codeFocus = widget.focusNode ?? FocusNode();
     _hoverHorizontalScroll = ScrollController();
     _hoverVerticalSCroll = ScrollController();
-    widget.controller.text = widget.initialText ?? '';
+    if (widget.initialText != null) widget.controller.text = widget.initialText!;
     widget.controller.manualAiCompletion = getManualAiSuggestion;
     if (widget.lspConfig != null) {
       widget.lspConfig!.responses.listen((data) {
