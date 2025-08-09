@@ -1,4 +1,4 @@
-A powerful and feature-rich alternative for [flutter_code_editor](https://pub.dev/packages/flutter_code_editor) and [code_text_field](https://pub.dev/documentation/code_text_field). Designed to bring a seamless and efficient coding experience.
+A powerful and feature-rich alternative for [flutter_code_editor](https://pub.dev/packages/flutter_code_editor) and [code_text_field](https://pub.dev/packages/code_text_field). Designed to bring a seamless and efficient coding experience.
 
 
 > [!NOTE]
