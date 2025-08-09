@@ -99,3 +99,7 @@
 ## 0.2.4
 
 * Added Emoji support
+
+## 0.2.5
+
+* Made url param in AI completion public.

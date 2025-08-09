@@ -55,7 +55,7 @@ class AiCompletion {
 }
 
 sealed class Models {
-  @protected
+  /// API Url
   String get url;
 
   /// API key for the AI service, if required.
@@ -65,7 +65,6 @@ sealed class Models {
   String? get model;
 
   /// Headers to include in the HTTP request.
-  @protected
   Map<String, String> get headers;
 
   @protected
@@ -104,8 +103,8 @@ sealed class Models {
 }
 
 sealed class OpenAiCompatible extends Models {
-  String get baseUrl;
   @protected
+  String get baseUrl;
   @override
   String get url => "$baseUrl/chat/completions";
 
