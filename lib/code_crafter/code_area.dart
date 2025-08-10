@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'dart:async';
 import '../LSP/lsp.dart';
 import '../utils/utils.dart';
@@ -165,7 +164,6 @@ class _CodeCrafterState extends State<CodeCrafter> {
   List<LspErrors> _diagnostics = [];
   bool _suggestionShown = false, _aiSuggestion = false;
   Rect _caretRect = Rect.zero;
-  String? content;
   TextEditingValue? _previousValue;
   bool _lspReady = false;
 
@@ -176,6 +174,7 @@ class _CodeCrafterState extends State<CodeCrafter> {
     _codeFocus = widget.focusNode ?? FocusNode();
     _hoverHorizontalScroll = ScrollController();
     _hoverVerticalSCroll = ScrollController();
+    widget.controller.codeScroll = ScrollController();
     if (widget.initialText != null) widget.controller.text = widget.initialText!;
     widget.controller.manualAiCompletion = getManualAiSuggestion;
     if (widget.lspConfig != null) {
@@ -229,11 +228,7 @@ class _CodeCrafterState extends State<CodeCrafter> {
     }
     if (widget.filePath != null) {
       (() async {
-        content = await File(widget.filePath!).readAsString();
-        widget.controller.value = TextEditingValue(
-          text: content ?? '',
-          selection: TextSelection.collapsed(offset: content?.length ?? 0),
-        );
+        widget.controller.openFile(widget.filePath!);
       })();
     }
     if (widget.initialText != null && widget.filePath != null) {
@@ -511,6 +506,7 @@ class _CodeCrafterState extends State<CodeCrafter> {
         result = ro;
         return;
       }
+      if (!root.mounted) return;
       element.visitChildElements(visitor);
     }
 
@@ -521,6 +517,7 @@ class _CodeCrafterState extends State<CodeCrafter> {
   Rect _globalCaretRect({bool global = false}) {
     final ctx = _codeFocus.context;
     if (ctx == null) return Rect.zero;
+    if (!mounted) return Rect.zero;
 
     final RenderEditable? renderEditable = _findRenderEditable(ctx);
     if (renderEditable == null) {
@@ -814,7 +811,13 @@ class _CodeCrafterState extends State<CodeCrafter> {
           final rect = _globalCaretRect();
           if (rect != _caretRect) setState(() => _caretRect = rect);
         });
-        return SizedBox(
+        return ValueListenableBuilder(
+          valueListenable: widget.controller.fileLoading,
+          builder:
+              (context, loading, _) =>
+                  loading
+                      ? Center(child: CircularProgressIndicator(color: widget.editorTheme?['root']?.color ?? Colors.grey))
+                      : SizedBox(
           height: constraints.maxHeight,
           width: constraints.maxWidth,
           child: Stack(
@@ -828,6 +831,7 @@ class _CodeCrafterState extends State<CodeCrafter> {
                 ),
               ),
               SingleChildScrollView(
+                controller: widget.controller.codeScroll,
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -943,6 +947,7 @@ class _CodeCrafterState extends State<CodeCrafter> {
                                     editorTheme: widget.editorTheme,
                                   ) ??
                                   TextField(
+                                    key: widget.controller.textKey,
                                     onTap: () {
                                       if (widget.lspConfig == null) return;
                                       _showDetailsOverlay();
@@ -1005,7 +1010,7 @@ class _CodeCrafterState extends State<CodeCrafter> {
                             alignment: Alignment.center,
                             decoration: BoxDecoration(
                               color: Colors.blueAccent,
-                              border: BoxBorder.all(
+                              border: Border.all(
                                 width: 0.2,
                                 color: Colors.white,
                               ),
@@ -1065,6 +1070,7 @@ class _CodeCrafterState extends State<CodeCrafter> {
                 ),
             ],
           ),
+        )
         );
       },
     );

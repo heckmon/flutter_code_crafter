@@ -28,6 +28,7 @@ class _GutterState extends State<Gutter> {
   TextPainter _textPainter = TextPainter();
   int lineNumber = 0;
   double? _gutterWidth;
+  int prevLineOffset = -1;
 
   void _updateLineStatesAndFolds() {
     _textPainter = TextPainter(
@@ -38,13 +39,14 @@ class _GutterState extends State<Gutter> {
     final updatedStates = List.generate(
       _textPainter.computeLineMetrics().length,
       (index) {
-        if (index < oldStates.length) {
+        if (prevLineOffset == _controller.lineOffset && index < oldStates.length) {
           return oldStates[index];
         } else {
-          return LineState(lineNumber: index + 1);
+          return LineState(lineNumber: index + 1 + _controller.lineOffset);
         }
       },
     );
+    prevLineOffset = _controller.lineOffset;
     lineNumber = _textPainter.computeLineMetrics().length;
     _lineStates.value = updatedStates;
     Shared().lineStates = _lineStates;
