@@ -22,7 +22,13 @@ class FileChunk {
   final int fileStartOffset;
   final int fileEndOffset;
 
-  FileChunk({required this.startLine, required this.endLine, required this.lines, required this.fileStartOffset, required this.fileEndOffset});
+  FileChunk({
+    required this.startLine,
+    required this.endLine,
+    required this.lines,
+    required this.fileStartOffset,
+    required this.fileEndOffset,
+  });
 }
 
 class CodeCrafterController extends TextEditingController {
@@ -57,9 +63,12 @@ class CodeCrafterController extends TextEditingController {
   final Map<int, Set<int>> _highlightIndex = {};
   TextStyle? _highlightStyle;
 
-  CodeCrafterController({String? text, Mode? language, ChunkConfig chunkConfig = const ChunkConfig()})
-    : _chunkConfig = chunkConfig,
-      _language = language {
+  CodeCrafterController({
+    String? text,
+    Mode? language,
+    ChunkConfig chunkConfig = const ChunkConfig(),
+  }) : _chunkConfig = chunkConfig,
+       _language = language {
     if (text != null) value = TextEditingValue(text: text);
   }
 
@@ -215,7 +224,14 @@ class CodeCrafterController extends TextEditingController {
   }
 
   int? _findMatchingBracket(String text, int pos) {
-    const Map<String, String> pairs = {'(': ')', '{': '}', '[': ']', ')': '(', '}': '{', ']': '['};
+    const Map<String, String> pairs = {
+      '(': ')',
+      '{': '}',
+      '[': ']',
+      ')': '(',
+      '}': '{',
+      ']': '[',
+    };
     const String openers = '({[';
 
     if (pos < 0 || pos >= text.characters.length) return null;
@@ -248,19 +264,26 @@ class CodeCrafterController extends TextEditingController {
   }
 
   @override
-  TextSpan buildTextSpan({required BuildContext context, TextStyle? style, bool? withComposing}) {
+  TextSpan buildTextSpan({
+    required BuildContext context,
+    TextStyle? style,
+    bool? withComposing,
+  }) {
     final int cursorPosition = selection.baseOffset;
     int? bracket1, bracket2;
 
     if (cursorPosition >= 0 && cursorPosition <= text.length) {
-      final String? before = cursorPosition > 0 ? text[cursorPosition - 1] : null;
-      final String? after = cursorPosition < text.length ? text[cursorPosition] : null;
-      final int? pos =
-          (before != null && '{}[]()'.contains(before))
-              ? cursorPosition - 1
-              : (after != null && '{}[]()'.contains(after))
-              ? cursorPosition
-              : null;
+      final String? before = cursorPosition > 0
+          ? text[cursorPosition - 1]
+          : null;
+      final String? after = cursorPosition < text.length
+          ? text[cursorPosition]
+          : null;
+      final int? pos = (before != null && '{}[]()'.contains(before))
+          ? cursorPosition - 1
+          : (after != null && '{}[]()'.contains(after))
+          ? cursorPosition
+          : null;
 
       if (pos != null) {
         final match = _findMatchingBracket(text, pos);
@@ -272,13 +295,19 @@ class CodeCrafterController extends TextEditingController {
     }
 
     final List<String> lines = text.isNotEmpty ? text.split("\n") : [];
-    final List<FoldRange> foldedRanges =
-        Shared().lineStates.value.where((line) => line.foldRange?.isFolded == true).map((line) => line.foldRange!).toList();
+    final List<FoldRange> foldedRanges = Shared().lineStates.value
+        .where((line) => line.foldRange?.isFolded == true)
+        .map((line) => line.foldRange!)
+        .toList();
 
     foldedRanges.sort((a, b) => a.startLine.compareTo(b.startLine));
     final filteredFolds = <FoldRange>[];
     for (final FoldRange fold in foldedRanges) {
-      bool isNested = filteredFolds.any((parent) => fold.startLine >= parent.startLine && fold.endLine <= parent.endLine);
+      bool isNested = filteredFolds.any(
+        (parent) =>
+            fold.startLine >= parent.startLine &&
+            fold.endLine <= parent.endLine,
+      );
       if (!isNested) filteredFolds.add(fold);
     }
     filteredFolds.sort((a, b) => b.startLine.compareTo(a.startLine));
@@ -287,7 +316,8 @@ class CodeCrafterController extends TextEditingController {
       int start = fold.startLine - 1;
       int end = fold.endLine;
       if (start >= 0 && end <= lines.length && start < end) {
-        lines[start] = "${lines[start]}...${'\u200D' * ((lines.sublist(start + 1, end).join('\n').length) - 2)}";
+        lines[start] =
+            "${lines[start]}...${'\u200D' * ((lines.sublist(start + 1, end).join('\n').length) - 2)}";
         lines.removeRange(start + 1, end);
       }
     }
@@ -303,29 +333,44 @@ class CodeCrafterController extends TextEditingController {
       baseStyle = baseStyle.merge(textStyle);
     }
 
-    if (Shared().aiResponse != null && newText.isNotEmpty && Shared().aiResponse!.isNotEmpty) {
+    if (Shared().aiResponse != null &&
+        newText.isNotEmpty &&
+        Shared().aiResponse!.isNotEmpty) {
       final String textBeforeCursor = newText.substring(0, cursorPosition);
       final String textAfterCursor = newText.substring(cursorPosition);
 
-      final bool atLineEnd = textAfterCursor.isEmpty || textAfterCursor.startsWith('\n') || textAfterCursor.trim().isEmpty;
+      final bool atLineEnd =
+          textAfterCursor.isEmpty ||
+          textAfterCursor.startsWith('\n') ||
+          textAfterCursor.trim().isEmpty;
 
       if (!atLineEnd) {
         return TextSpan(text: newText, style: baseStyle);
       }
-      final String lastTypedChar = textBeforeCursor.isNotEmpty ? textBeforeCursor.characters.last.replaceAll("\n", '') : '';
-      final List<Node>? beforeCursorNodes = highlight.parse(textBeforeCursor, language: _langId).nodes;
+      final String lastTypedChar = textBeforeCursor.isNotEmpty
+          ? textBeforeCursor.characters.last.replaceAll("\n", '')
+          : '';
+      final List<Node>? beforeCursorNodes = highlight
+          .parse(textBeforeCursor, language: _langId)
+          .nodes;
 
-      if (Shared().lastCursorPosition != null && cursorPosition != Shared().lastCursorPosition) {
-        final movedCursor = (cursorPosition != Shared().lastCursorPosition! + 1);
+      if (Shared().lastCursorPosition != null &&
+          cursorPosition != Shared().lastCursorPosition) {
+        final movedCursor =
+            (cursorPosition != Shared().lastCursorPosition! + 1);
         final mismatch =
             lastTypedChar.trim().isNotEmpty &&
-            (Shared().aiResponse == null || Shared().aiResponse!.isEmpty || Shared().aiResponse![0] != lastTypedChar);
+            (Shared().aiResponse == null ||
+                Shared().aiResponse!.isEmpty ||
+                Shared().aiResponse![0] != lastTypedChar);
         if (movedCursor || mismatch) {
           Shared().aiResponse = null;
         }
       }
 
-      if (Shared().aiResponse != null && Shared().aiResponse!.isNotEmpty && Shared().aiResponse![0] == lastTypedChar) {
+      if (Shared().aiResponse != null &&
+          Shared().aiResponse!.isNotEmpty &&
+          Shared().aiResponse![0] == lastTypedChar) {
         Shared().aiResponse = Shared().aiResponse!.substring(1);
       }
 
@@ -333,28 +378,48 @@ class CodeCrafterController extends TextEditingController {
 
       TextSpan aiOverlay = TextSpan(
         text: Shared().aiResponse,
-        style: Shared().aiOverlayStyle ?? TextStyle(color: Colors.grey, fontStyle: FontStyle.italic),
+        style:
+            Shared().aiOverlayStyle ??
+            TextStyle(color: Colors.grey, fontStyle: FontStyle.italic),
       );
-      final List<Node>? afterCursorNodes = highlight.parse(textAfterCursor, language: _langId).nodes;
+      final List<Node>? afterCursorNodes = highlight
+          .parse(textAfterCursor, language: _langId)
+          .nodes;
 
       if (beforeCursorNodes != null) {
         if (cursorPosition != selection.baseOffset) {
           Shared().aiResponse = null;
         }
-        return TextSpan(style: baseStyle, children: [..._convert(beforeCursorNodes), aiOverlay, ..._convert(afterCursorNodes ?? <Node>[])]);
+        return TextSpan(
+          style: baseStyle,
+          children: [
+            ..._convert(beforeCursorNodes),
+            aiOverlay,
+            ..._convert(afterCursorNodes ?? <Node>[]),
+          ],
+        );
       }
     }
 
     final List<Node>? nodes = highlight.parse(newText, language: _langId).nodes;
     final Set<int> unmatchedBrackets = _findUnmatchedBrackets(text);
     if (nodes != null && editorTheme.isNotEmpty) {
-      return TextSpan(style: baseStyle, children: _convert(nodes, 0, bracket1, bracket2, unmatchedBrackets));
+      return TextSpan(
+        style: baseStyle,
+        children: _convert(nodes, 0, bracket1, bracket2, unmatchedBrackets),
+      );
     } else {
       return TextSpan(text: text, style: textStyle);
     }
   }
 
-  List<TextSpan> _convert(List<Node> nodes, [int startOffset = 0, int? b1, int? b2, Set<int> unmatched = const {}]) {
+  List<TextSpan> _convert(
+    List<Node> nodes, [
+    int startOffset = 0,
+    int? b1,
+    int? b2,
+    Set<int> unmatched = const {},
+  ]) {
     List<TextSpan> spans = [];
     int offset = startOffset;
 
@@ -365,12 +430,15 @@ class CodeCrafterController extends TextEditingController {
           final line = nodeLines[lineIdx];
           final startOfLineOffset = offset;
           final lineChars = line.characters;
-          offset += lineChars.length + (lineIdx == nodeLines.length - 1 ? 0 : 1);
+          offset +=
+              lineChars.length + (lineIdx == nodeLines.length - 1 ? 0 : 1);
           final match = RegExp(r'^(\s*)').firstMatch(line);
           final leading = match?.group(0) ?? '';
           final indentLen = leading.length;
           final indentLvl = indentLen ~/ Shared().tabSize;
-          final Set<int> guideCols = {for (int k = 0; k < indentLvl; k++) k * Shared().tabSize};
+          final Set<int> guideCols = {
+            for (int k = 0; k < indentLvl; k++) k * Shared().tabSize,
+          };
           for (int col = 0; col < lineChars.length; col++) {
             final globalIdx = startOfLineOffset + col;
             String ch = lineChars.elementAt(col);
@@ -382,7 +450,9 @@ class CodeCrafterController extends TextEditingController {
 
             if (ch == '│') {
               charStyle = TextStyle(
-                color: Shared().enableRulerLines ? Colors.grey : Colors.transparent,
+                color: Shared().enableRulerLines
+                    ? Colors.grey
+                    : Colors.transparent,
                 fontSize: Shared().textStyle?.fontSize ?? 14,
               );
             }
@@ -397,19 +467,19 @@ class CodeCrafterController extends TextEditingController {
                       decoration: TextDecoration.underline,
                       decorationStyle: TextDecorationStyle.wavy,
                       decorationThickness: 2,
-                      decorationColor:
-                          (() {
-                            switch (item.severity) {
-                              case 1:
-                                return Colors.red;
-                              case 2:
-                                return Colors.amber;
-                              case 3:
-                                return Colors.blueAccent;
-                              default:
-                                return editorTheme['root']?.backgroundColor ?? Colors.black;
-                            }
-                          })(),
+                      decorationColor: (() {
+                        switch (item.severity) {
+                          case 1:
+                            return Colors.red;
+                          case 2:
+                            return Colors.amber;
+                          case 3:
+                            return Colors.blueAccent;
+                          default:
+                            return editorTheme['root']?.backgroundColor ??
+                                Colors.black;
+                        }
+                      })(),
                     ).merge(Shared().textStyle);
                   }
                 }
@@ -418,15 +488,18 @@ class CodeCrafterController extends TextEditingController {
 
             if (isUnmatched) {
               charStyle = (charStyle ?? const TextStyle()).merge(
-                const TextStyle(color: Colors.red, decoration: TextDecoration.underline, decorationStyle: TextDecorationStyle.wavy),
+                const TextStyle(
+                  color: Colors.red,
+                  decoration: TextDecoration.underline,
+                  decorationStyle: TextDecorationStyle.wavy,
+                ),
               );
             } else if (isMatch) {
               charStyle = (charStyle ?? const TextStyle()).merge(
                 TextStyle(
-                  background:
-                      Paint()
-                        ..style = PaintingStyle.stroke
-                        ..color = editorTheme['root']?.color ?? Colors.white,
+                  background: Paint()
+                    ..style = PaintingStyle.stroke
+                    ..color = editorTheme['root']?.color ?? Colors.white,
                 ),
               );
             }
@@ -437,7 +510,10 @@ class CodeCrafterController extends TextEditingController {
                 for (final startIdx in entry.value) {
                   if (globalIdx >= startIdx && globalIdx < startIdx + wordLen) {
                     charStyle = (charStyle ?? const TextStyle()).merge(
-                      _highlightStyle ?? TextStyle(backgroundColor: Colors.amberAccent.withAlpha(80)),
+                      _highlightStyle ??
+                          TextStyle(
+                            backgroundColor: Colors.amberAccent.withAlpha(80),
+                          ),
                     );
                   }
                 }
@@ -453,7 +529,9 @@ class CodeCrafterController extends TextEditingController {
         }
       } else if (node.children != null) {
         final inner = _convert(node.children!, offset, b1, b2, unmatched);
-        spans.add(TextSpan(children: inner, style: editorTheme[node.className ?? '']));
+        spans.add(
+          TextSpan(children: inner, style: editorTheme[node.className ?? '']),
+        );
         offset += _textLengthFromSpans(inner);
       }
     }
@@ -487,7 +565,9 @@ class CodeCrafterController extends TextEditingController {
     if (word.isNotEmpty) {
       final regExp = RegExp('\\b$word\\b');
       for (final match in regExp.allMatches(text)) {
-        _highlightIndex.putIfAbsent(word.length, () => <int>{}).add(match.start);
+        _highlightIndex
+            .putIfAbsent(word.length, () => <int>{})
+            .add(match.start);
       }
     }
   }
@@ -533,7 +613,10 @@ class CodeCrafterController extends TextEditingController {
     text = text.replaceRange(selection.start, selection.end, str);
     final len = str.length;
 
-    selection = sel.copyWith(baseOffset: sel.start + len, extentOffset: sel.start + len);
+    selection = sel.copyWith(
+      baseOffset: sel.start + len,
+      extentOffset: sel.start + len,
+    );
   }
 
   /// Remove the char just before the cursor or the selection
@@ -545,7 +628,10 @@ class CodeCrafterController extends TextEditingController {
     final sel = selection;
     text = text.replaceRange(selection.start - 1, selection.start, '');
 
-    selection = sel.copyWith(baseOffset: sel.start - 1, extentOffset: sel.start - 1);
+    selection = sel.copyWith(
+      baseOffset: sel.start - 1,
+      extentOffset: sel.start - 1,
+    );
   }
 
   /// Remove the selected text
@@ -625,7 +711,10 @@ class CodeCrafterController extends TextEditingController {
     await _fileHandle!.writeFrom(encoded);
   }
 
-  Future<void> _loadChunk(int startLine, {(int, double)? maintainScrollPositionData}) async {
+  Future<void> _loadChunk(
+    int startLine, {
+    (int, double)? maintainScrollPositionData,
+  }) async {
     if (_isLoadingChunk || _fileHandle == null || _lineOffsets == null) return;
 
     final totalLines = _lineOffsets!.length - 1;
@@ -639,12 +728,17 @@ class CodeCrafterController extends TextEditingController {
     _lastRequestedChunkStart = actualStartLine;
 
     try {
-      final endLine = math.min(totalLines, actualStartLine + _chunkConfig.chunkSize);
+      final endLine = math.min(
+        totalLines,
+        actualStartLine + _chunkConfig.chunkSize,
+      );
 
       if (actualStartLine >= totalLines) return;
 
       final startOffset = _lineOffsets![actualStartLine];
-      final endOffset = endLine < totalLines ? _lineOffsets![endLine] : _totalFileSize!;
+      final endOffset = endLine < totalLines
+          ? _lineOffsets![endLine]
+          : _totalFileSize!;
 
       await _fileHandle!.setPosition(startOffset);
       final chunkSize = endOffset - startOffset;
@@ -658,11 +752,18 @@ class CodeCrafterController extends TextEditingController {
         lines.removeLast();
       }
 
-      _currentChunk = FileChunk(startLine: actualStartLine, endLine: endLine, lines: lines, fileStartOffset: startOffset, fileEndOffset: endOffset);
+      _currentChunk = FileChunk(
+        startLine: actualStartLine,
+        endLine: endLine,
+        lines: lines,
+        fileStartOffset: startOffset,
+        fileEndOffset: endOffset,
+      );
 
       if (maintainScrollPositionData != null && codeScroll != null) {
         if (codeScroll!.hasClients) {
-          final targetScrollOffset = maintainScrollPositionData.$1 * maintainScrollPositionData.$2;
+          final targetScrollOffset =
+              maintainScrollPositionData.$1 * maintainScrollPositionData.$2;
           final maxScroll = codeScroll!.position.maxScrollExtent;
           final scrollOffset = math.min(targetScrollOffset, maxScroll);
           codeScroll!.jumpTo(scrollOffset);
@@ -672,7 +773,7 @@ class CodeCrafterController extends TextEditingController {
       final chunkContent = lines.join('\n');
       super.value = super.value.copyWith(text: chunkContent);
     } catch (e) {
-      print('Error loading chunk: $e');
+      debugPrint('Error loading chunk: $e');
       _lastRequestedChunkStart = null;
     } finally {
       _isLoadingChunk = false;
@@ -680,7 +781,11 @@ class CodeCrafterController extends TextEditingController {
   }
 
   void _onScroll() {
-    if (_isLoadingChunk || _currentChunk == null || _fileHandle == null || codeScroll == null || codeScroll?.hasClients != true) {
+    if (_isLoadingChunk ||
+        _currentChunk == null ||
+        _fileHandle == null ||
+        codeScroll == null ||
+        codeScroll?.hasClients != true) {
       return;
     }
 
@@ -689,7 +794,9 @@ class CodeCrafterController extends TextEditingController {
     final overlapSize = _chunkConfig.chunkLineOverlap;
 
     final nextLoadTriggerLine = chunkEndLine - overlapSize;
-    final prevLoadTriggerLine = chunkStartLine == 0 ? -1 : chunkStartLine + overlapSize;
+    final prevLoadTriggerLine = chunkStartLine == 0
+        ? -1
+        : chunkStartLine + overlapSize;
 
     EditableTextState? editableTextState;
 
@@ -709,7 +816,10 @@ class CodeCrafterController extends TextEditingController {
     if (_cachedLineMetrics.isEmpty) {
       final textStyle = editableTextState!.widget.style;
 
-      final textPainter = TextPainter(text: TextSpan(text: text, style: textStyle), textDirection: TextDirection.ltr);
+      final textPainter = TextPainter(
+        text: TextSpan(text: text, style: textStyle),
+        textDirection: TextDirection.ltr,
+      );
 
       final box = editableTextState!.context.findRenderObject()! as RenderBox;
       final availableWidth = box.size.width;
@@ -723,7 +833,9 @@ class CodeCrafterController extends TextEditingController {
     }
 
     if (editableTextState != null && _cachedLineMetrics.isNotEmpty) {
-      final scrollBox = codeScroll!.position.context.storageContext.findRenderObject()! as RenderBox;
+      final scrollBox =
+          codeScroll!.position.context.storageContext.findRenderObject()!
+              as RenderBox;
       final lineHeight = _cachedLineMetrics[0].height;
 
       final scrollOffset = codeScroll!.offset;
@@ -731,32 +843,45 @@ class CodeCrafterController extends TextEditingController {
 
       final double viewportHeight = scrollBox.size.height;
       final double visibleBottom = scrollOffset + viewportHeight;
-      final lastVisibleLineOffset = (visibleBottom / lineHeight).floor().clamp(0, _cachedLineMetrics.length - 1);
-
-      print(prevLoadTriggerLine);
-      print(nextLoadTriggerLine);
-      print("-----");
-
-      print(firstVisibleLineOffset);
-      print(chunkStartLine);
-      print(_chunkConfig.chunkSize);
-      print(_chunkConfig.chunkSize + firstVisibleLineOffset);
+      final lastVisibleLineOffset = (visibleBottom / lineHeight).floor().clamp(
+        0,
+        _cachedLineMetrics.length - 1,
+      );
 
       if ((chunkStartLine + firstVisibleLineOffset) >= nextLoadTriggerLine) {
-        final nextChunkStart = _currentChunk!.endLine - (_chunkConfig.chunkLineOverlap * 2);
+        final nextChunkStart =
+            _currentChunk!.endLine - (_chunkConfig.chunkLineOverlap * 2);
         final totalLines = _lineOffsets!.length - 1;
 
-        if (nextChunkStart < totalLines && _lastRequestedChunkStart != nextChunkStart) {
-          unawaited(_loadChunk(nextChunkStart, maintainScrollPositionData: (firstVisibleLineOffset + chunkStartLine - nextChunkStart, lineHeight)));
+        if (nextChunkStart < totalLines &&
+            _lastRequestedChunkStart != nextChunkStart) {
+          unawaited(
+            _loadChunk(
+              nextChunkStart,
+              maintainScrollPositionData: (
+                firstVisibleLineOffset + chunkStartLine - nextChunkStart,
+                lineHeight,
+              ),
+            ),
+          );
         }
-      } else if (lastVisibleLineOffset + chunkStartLine <= prevLoadTriggerLine) {
-        final prevChunkStart = math.max(0, _currentChunk!.startLine - (_chunkConfig.chunkSize - (_chunkConfig.chunkLineOverlap * 2)));
+      } else if (lastVisibleLineOffset + chunkStartLine <=
+          prevLoadTriggerLine) {
+        final prevChunkStart = math.max(
+          0,
+          _currentChunk!.startLine -
+              (_chunkConfig.chunkSize - (_chunkConfig.chunkLineOverlap * 2)),
+        );
 
-        print("///// $prevChunkStart");
-        print(prevChunkStart + firstVisibleLineOffset + (_chunkConfig.chunkLineOverlap * 2));
         if (prevChunkStart >= 0 && _lastRequestedChunkStart != prevChunkStart) {
           unawaited(
-            _loadChunk(prevChunkStart, maintainScrollPositionData: (firstVisibleLineOffset + (_chunkConfig.chunkSize / 2).floor(), lineHeight)),
+            _loadChunk(
+              prevChunkStart,
+              maintainScrollPositionData: (
+                firstVisibleLineOffset + (_chunkConfig.chunkSize / 2).floor(),
+                lineHeight,
+              ),
+            ),
           );
         }
       }

@@ -175,7 +175,9 @@ class _CodeCrafterState extends State<CodeCrafter> {
     _hoverHorizontalScroll = ScrollController();
     _hoverVerticalSCroll = ScrollController();
     widget.controller.codeScroll = ScrollController();
-    if (widget.initialText != null) widget.controller.text = widget.initialText!;
+    if (widget.initialText != null) {
+      widget.controller.text = widget.initialText!;
+    }
     widget.controller.manualAiCompletion = getManualAiSuggestion;
     if (widget.lspConfig != null) {
       widget.lspConfig!.responses.listen((data) {
@@ -813,264 +815,287 @@ class _CodeCrafterState extends State<CodeCrafter> {
         });
         return ValueListenableBuilder(
           valueListenable: widget.controller.fileLoading,
-          builder:
-              (context, loading, _) =>
-                  loading
-                      ? Center(child: CircularProgressIndicator(color: widget.editorTheme?['root']?.color ?? Colors.grey))
-                      : SizedBox(
-          height: constraints.maxHeight,
-          width: constraints.maxWidth,
-          child: Stack(
-            children: [
-              GestureDetector(
-                onTap: () => _codeFocus.requestFocus(),
-                child: Container(
-                  color:
-                      widget.editorTheme?['root']?.backgroundColor ??
-                      Colors.black,
-                ),
-              ),
-              SingleChildScrollView(
-                controller: widget.controller.codeScroll,
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Gutter(
-                      widget.gutterStyle ??
-                          GutterStyle(
-                            foldedIconColor:
-                                widget.editorTheme?['root']?.color ??
-                                Colors.grey,
-                            unfoldedIconColor:
-                                widget.editorTheme?['root']?.color ??
-                                Colors.grey,
-                          ),
-                      widget.enableBreakPoints,
-                      widget.enableFolding,
-                    ),
-                    widget.enableGutterDivider
-                        ? Padding(
-                            padding: const EdgeInsets.only(right: 4),
-                            child: SizedBox(
-                              height: constraints.maxHeight,
-                              child: VerticalDivider(
-                                color:
-                                    widget.gutterStyle?.dividerColor ??
-                                    widget.editorTheme?['root']?.color ??
-                                    Colors.white,
-                                width: 0,
-                                thickness:
-                                    widget.gutterStyle?.dividerThickness ?? 0.3,
-                              ),
-                            ),
-                          )
-                        : SizedBox.shrink(),
-                    Expanded(
-                      child: KeyboardListener(
-                        focusNode: _keyboardFocus,
-                        onKeyEvent: (value) {
-                          if (value is KeyDownEvent) {
-                            if (value.logicalKey == LogicalKeyboardKey.escape) {
-                              if (_suggestionShown) {
-                                _suggestionFocus.unfocus();
-                                _hideSuggestionOverlay();
-                                _codeFocus.requestFocus();
-                              }
-                            }
-
-                            if (value.logicalKey ==
-                                LogicalKeyboardKey.arrowUp) {
-                              if (_suggestionShown) {
-                                setState(() => _selected--);
-                                _suggestionFocus.requestFocus();
-                              }
-                            }
-
-                            if (value.logicalKey ==
-                                LogicalKeyboardKey.arrowDown) {
-                              if (_suggestionShown) {
-                                setState(() => _selected++);
-                                _suggestionFocus.requestFocus();
-                              }
-                            }
-
-                            if (value.logicalKey == LogicalKeyboardKey.enter) {
-                              if (_suggestionShown) {
-                                _suggestionFocus.requestFocus();
-                              }
-                            }
-
-                            if (value.logicalKey == LogicalKeyboardKey.tab) {
-                              if (!widget.wrapLines) {
-                                _codeFocus.requestFocus();
-                                return;
-                              }
-                              int cursorPosition =
-                                  widget.controller.selection.baseOffset;
-                              String currText = widget.controller.text;
-                              _keyboardFocus.previousFocus();
-                              widget.controller.value = TextEditingValue(
-                                text: currText.replaceRange(
-                                  cursorPosition,
-                                  cursorPosition,
-                                  ' ' * widget.tabSize,
-                                ),
-                                selection: TextSelection.collapsed(
-                                  offset: cursorPosition + widget.tabSize,
-                                ),
-                              );
-                              return;
-                            }
-                          }
-                        },
-                        child: Theme(
-                          data: ThemeData(
-                            textSelectionTheme: TextSelectionThemeData(
-                              selectionColor: widget.selectionColor,
-                              selectionHandleColor: widget.selectionHandleColor,
-                            ),
-                          ),
-                          child: SingleChildScrollView(
-                            scrollDirection: Axis.horizontal,
-                            child: SizedBox(
-                              width: widget.wrapLines
-                                  ? constraints.maxWidth - gutterWidth
-                                  : double.maxFinite,
-                              child:
-                                  editorField?.build(
-                                    controller: widget.controller,
-                                    focusNode: _codeFocus,
-                                    autofocus: widget.autoFocus,
-                                    readOnly: widget.readOnly,
-                                    fallbackStyle: widget.textStyle,
-                                    fallbackCursorColor: widget.cursorColor,
-                                    editorTheme: widget.editorTheme,
-                                  ) ??
-                                  TextField(
-                                    key: widget.controller.textKey,
-                                    onTap: () {
-                                      if (widget.lspConfig == null) return;
-                                      _showDetailsOverlay();
-                                    },
-                                    controller: widget.controller,
-                                    focusNode: _codeFocus,
-                                    autofocus: widget.autoFocus,
-                                    readOnly: widget.readOnly,
-                                    scrollPhysics:
-                                        const NeverScrollableScrollPhysics(),
-                                    keyboardType: TextInputType.multiline,
-                                    decoration: const InputDecoration(
-                                      isCollapsed: true,
-                                      border: InputBorder.none,
-                                    ),
-                                    maxLines: null,
-                                    showCursor: true,
-                                    style:
-                                        widget.textStyle ??
-                                        const TextStyle(
-                                          height: 1.5,
-                                          fontSize: 14,
-                                        ),
-                                    cursorHeight:
-                                        widget.textStyle?.fontSize ?? 14,
-                                    cursorColor:
-                                        widget.cursorColor ??
-                                        widget.editorTheme?['root']?.color ??
-                                        Colors.white,
-                                    cursorWidth: 2,
-                                  ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              if (widget.aiCompletion != null &&
-                  widget.aiCompletion!.enableCompletion &&
-                  Shared().aiResponse != null &&
-                  Shared().aiResponse!.isNotEmpty &&
-                  _aiSuggestion)
-                Positioned(
-                  left: _caretRect.left,
-                  right: _caretRect.right,
-                  top:
-                      _caretRect.top +
-                      _caretRect.height +
-                      ((Shared().aiResponse!.split('\n').length + 1.5) *
-                          (widget.textStyle?.fontSize ?? 14)),
-                  child: Row(
+          builder: (context, loading, _) => loading
+              ? Center(
+                  child: CircularProgressIndicator(
+                    color: widget.editorTheme?['root']?.color ?? Colors.grey,
+                  ),
+                )
+              : SizedBox(
+                  height: constraints.maxHeight,
+                  width: constraints.maxWidth,
+                  child: Stack(
                     children: [
-                      SizedBox(
-                        width: 55,
-                        height: _caretRect.height,
-                        child: InkWell(
-                          child: Container(
-                            alignment: Alignment.center,
-                            decoration: BoxDecoration(
-                              color: Colors.blueAccent,
-                              border: Border.all(
-                                width: 0.2,
-                                color: Colors.white,
-                              ),
-                              borderRadius: BorderRadius.circular(3),
-                            ),
-                            child: const Text(
-                              "Accept",
-                              style: TextStyle(
-                                fontSize: 9,
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                          onTap: () {
-                            setState(() {
-                              if (Shared().aiResponse == null) return;
-                              _insertAiSuggestion(Shared().aiResponse!);
-                              Future.delayed(Duration.zero);
-                              Shared().aiResponse = null;
-                            });
-                          },
+                      GestureDetector(
+                        onTap: () => _codeFocus.requestFocus(),
+                        child: Container(
+                          color:
+                              widget.editorTheme?['root']?.backgroundColor ??
+                              Colors.black,
                         ),
                       ),
-                      const SizedBox(width: 5),
-                      SizedBox(
-                        width: 55,
-                        height: _caretRect.height,
-                        child: InkWell(
-                          child: Container(
-                            alignment: Alignment.center,
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(3),
-                              color: Colors.redAccent,
-                              border: Border.all(
-                                color: Colors.white,
-                                width: 0.2,
+                      SingleChildScrollView(
+                        controller: widget.controller.codeScroll,
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Gutter(
+                              widget.gutterStyle ??
+                                  GutterStyle(
+                                    foldedIconColor:
+                                        widget.editorTheme?['root']?.color ??
+                                        Colors.grey,
+                                    unfoldedIconColor:
+                                        widget.editorTheme?['root']?.color ??
+                                        Colors.grey,
+                                  ),
+                              widget.enableBreakPoints,
+                              widget.enableFolding,
+                            ),
+                            widget.enableGutterDivider
+                                ? Padding(
+                                    padding: const EdgeInsets.only(right: 4),
+                                    child: SizedBox(
+                                      height: constraints.maxHeight,
+                                      child: VerticalDivider(
+                                        color:
+                                            widget.gutterStyle?.dividerColor ??
+                                            widget
+                                                .editorTheme?['root']
+                                                ?.color ??
+                                            Colors.white,
+                                        width: 0,
+                                        thickness:
+                                            widget
+                                                .gutterStyle
+                                                ?.dividerThickness ??
+                                            0.3,
+                                      ),
+                                    ),
+                                  )
+                                : SizedBox.shrink(),
+                            Expanded(
+                              child: KeyboardListener(
+                                focusNode: _keyboardFocus,
+                                onKeyEvent: (value) {
+                                  if (value is KeyDownEvent) {
+                                    if (value.logicalKey ==
+                                        LogicalKeyboardKey.escape) {
+                                      if (_suggestionShown) {
+                                        _suggestionFocus.unfocus();
+                                        _hideSuggestionOverlay();
+                                        _codeFocus.requestFocus();
+                                      }
+                                    }
+
+                                    if (value.logicalKey ==
+                                        LogicalKeyboardKey.arrowUp) {
+                                      if (_suggestionShown) {
+                                        setState(() => _selected--);
+                                        _suggestionFocus.requestFocus();
+                                      }
+                                    }
+
+                                    if (value.logicalKey ==
+                                        LogicalKeyboardKey.arrowDown) {
+                                      if (_suggestionShown) {
+                                        setState(() => _selected++);
+                                        _suggestionFocus.requestFocus();
+                                      }
+                                    }
+
+                                    if (value.logicalKey ==
+                                        LogicalKeyboardKey.enter) {
+                                      if (_suggestionShown) {
+                                        _suggestionFocus.requestFocus();
+                                      }
+                                    }
+
+                                    if (value.logicalKey ==
+                                        LogicalKeyboardKey.tab) {
+                                      if (!widget.wrapLines) {
+                                        _codeFocus.requestFocus();
+                                        return;
+                                      }
+                                      int cursorPosition = widget
+                                          .controller
+                                          .selection
+                                          .baseOffset;
+                                      String currText = widget.controller.text;
+                                      _keyboardFocus.previousFocus();
+                                      widget
+                                          .controller
+                                          .value = TextEditingValue(
+                                        text: currText.replaceRange(
+                                          cursorPosition,
+                                          cursorPosition,
+                                          ' ' * widget.tabSize,
+                                        ),
+                                        selection: TextSelection.collapsed(
+                                          offset:
+                                              cursorPosition + widget.tabSize,
+                                        ),
+                                      );
+                                      return;
+                                    }
+                                  }
+                                },
+                                child: Theme(
+                                  data: ThemeData(
+                                    textSelectionTheme: TextSelectionThemeData(
+                                      selectionColor: widget.selectionColor,
+                                      selectionHandleColor:
+                                          widget.selectionHandleColor,
+                                    ),
+                                  ),
+                                  child: SingleChildScrollView(
+                                    scrollDirection: Axis.horizontal,
+                                    child: SizedBox(
+                                      width: widget.wrapLines
+                                          ? constraints.maxWidth - gutterWidth
+                                          : double.maxFinite,
+                                      child:
+                                          editorField?.build(
+                                            controller: widget.controller,
+                                            focusNode: _codeFocus,
+                                            autofocus: widget.autoFocus,
+                                            readOnly: widget.readOnly,
+                                            fallbackStyle: widget.textStyle,
+                                            fallbackCursorColor:
+                                                widget.cursorColor,
+                                            editorTheme: widget.editorTheme,
+                                          ) ??
+                                          TextField(
+                                            key: widget.controller.textKey,
+                                            onTap: () {
+                                              if (widget.lspConfig == null) {
+                                                return;
+                                              }
+                                              _showDetailsOverlay();
+                                            },
+                                            controller: widget.controller,
+                                            focusNode: _codeFocus,
+                                            autofocus: widget.autoFocus,
+                                            readOnly: widget.readOnly,
+                                            scrollPhysics:
+                                                const NeverScrollableScrollPhysics(),
+                                            keyboardType:
+                                                TextInputType.multiline,
+                                            decoration: const InputDecoration(
+                                              isCollapsed: true,
+                                              border: InputBorder.none,
+                                            ),
+                                            maxLines: null,
+                                            showCursor: true,
+                                            style:
+                                                widget.textStyle ??
+                                                const TextStyle(
+                                                  height: 1.5,
+                                                  fontSize: 14,
+                                                ),
+                                            cursorHeight:
+                                                widget.textStyle?.fontSize ??
+                                                14,
+                                            cursorColor:
+                                                widget.cursorColor ??
+                                                widget
+                                                    .editorTheme?['root']
+                                                    ?.color ??
+                                                Colors.white,
+                                            cursorWidth: 2,
+                                          ),
+                                    ),
+                                  ),
+                                ),
                               ),
                             ),
-                            child: const Text(
-                              "Reject",
-                              style: TextStyle(
-                                fontSize: 9,
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                          onTap: () => setState(() {
-                            if (Shared().aiResponse == null) return;
-                            Shared().aiResponse = null;
-                          }),
+                          ],
                         ),
                       ),
+                      if (widget.aiCompletion != null &&
+                          widget.aiCompletion!.enableCompletion &&
+                          Shared().aiResponse != null &&
+                          Shared().aiResponse!.isNotEmpty &&
+                          _aiSuggestion)
+                        Positioned(
+                          left: _caretRect.left,
+                          right: _caretRect.right,
+                          top:
+                              _caretRect.top +
+                              _caretRect.height +
+                              ((Shared().aiResponse!.split('\n').length + 1.5) *
+                                  (widget.textStyle?.fontSize ?? 14)),
+                          child: Row(
+                            children: [
+                              SizedBox(
+                                width: 55,
+                                height: _caretRect.height,
+                                child: InkWell(
+                                  child: Container(
+                                    alignment: Alignment.center,
+                                    decoration: BoxDecoration(
+                                      color: Colors.blueAccent,
+                                      border: Border.all(
+                                        width: 0.2,
+                                        color: Colors.white,
+                                      ),
+                                      borderRadius: BorderRadius.circular(3),
+                                    ),
+                                    child: const Text(
+                                      "Accept",
+                                      style: TextStyle(
+                                        fontSize: 9,
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                  onTap: () {
+                                    setState(() {
+                                      if (Shared().aiResponse == null) return;
+                                      _insertAiSuggestion(Shared().aiResponse!);
+                                      Future.delayed(Duration.zero);
+                                      Shared().aiResponse = null;
+                                    });
+                                  },
+                                ),
+                              ),
+                              const SizedBox(width: 5),
+                              SizedBox(
+                                width: 55,
+                                height: _caretRect.height,
+                                child: InkWell(
+                                  child: Container(
+                                    alignment: Alignment.center,
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(3),
+                                      color: Colors.redAccent,
+                                      border: Border.all(
+                                        color: Colors.white,
+                                        width: 0.2,
+                                      ),
+                                    ),
+                                    child: const Text(
+                                      "Reject",
+                                      style: TextStyle(
+                                        fontSize: 9,
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                  onTap: () => setState(() {
+                                    if (Shared().aiResponse == null) return;
+                                    Shared().aiResponse = null;
+                                  }),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                     ],
                   ),
                 ),
-            ],
-          ),
-        )
         );
       },
     );

@@ -103,3 +103,7 @@
 ## 0.2.5
 
 * Made url param in AI completion public.
+
+## 0.2.6
+
+* feat: arbitrarily sized file handling

@@ -39,7 +39,8 @@ class _GutterState extends State<Gutter> {
     final updatedStates = List.generate(
       _textPainter.computeLineMetrics().length,
       (index) {
-        if (prevLineOffset == _controller.lineOffset && index < oldStates.length) {
+        if (prevLineOffset == _controller.lineOffset &&
+            index < oldStates.length) {
           return oldStates[index];
         } else {
           return LineState(lineNumber: index + 1 + _controller.lineOffset);

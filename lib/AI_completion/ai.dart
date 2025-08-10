@@ -470,6 +470,6 @@ enum CompletionType {
   /// Use this when you have a very limited number of requests to the AI service, or when you want to control when the AI completion is invoked.
   manual,
 
-  /// Completion is triggered manually, but the AI service is invoked only when the user explicitly requests it.
+  /// Completion shown automatically, but it can be triggered manually using the callback at will.
   mixed,
 }
