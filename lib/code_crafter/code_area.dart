@@ -269,135 +269,139 @@ class _CodeCrafterState extends State<CodeCrafter> {
     Shared().tabSize = widget.tabSize;
     Shared().enableRulerLines = widget.enableRulerLines;
     _value = widget.controller.text;
-    widget.controller.addListener(() {
-      final cursorOffset = widget.controller.selection.baseOffset;
-      if (cursorOffset < 0) return;
-      final currentText = widget.controller.text;
-      final lines = currentText.substring(0, cursorOffset).split('\n');
-      final line = lines.length - 1;
-      final prefix = _getCurrentWordPrefix(currentText, cursorOffset);
-      final character = lines.isNotEmpty ? lines.last.length : 0;
-      final currentValue = widget.controller.value;
-      final prevValue = _previousValue ?? currentValue;
-      bool isTyping = false;
-      if (currentValue.text.length == prevValue.text.length + 1 &&
-          currentValue.selection.baseOffset ==
-              prevValue.selection.baseOffset + 1) {
-        final insertedChar = currentValue.text.substring(
-          prevValue.selection.baseOffset,
-          currentValue.selection.baseOffset,
-        );
-        isTyping =
-            insertedChar.isNotEmpty &&
-            RegExp(r'[a-zA-Z]').hasMatch(insertedChar);
-      }
-      _previousValue = currentValue;
+    widget.controller.addListener(controllerListener);
+    super.initState();
+  }
 
-      if (_aiSuggestion && Shared().aiResponse == null) {
-        setState(() {
-          _aiSuggestion = false;
-        });
+  void controllerListener() {
+    final cursorOffset = widget.controller.selection.baseOffset;
+    if (cursorOffset < 0) return;
+    final currentText = widget.controller.text;
+    final lines = currentText.substring(0, cursorOffset).split('\n');
+    final line = lines.length - 1;
+    final prefix = _getCurrentWordPrefix(currentText, cursorOffset);
+    final character = lines.isNotEmpty ? lines.last.length : 0;
+    final currentValue = widget.controller.value;
+    final prevValue = _previousValue ?? currentValue;
+    bool isTyping = false;
+    if (currentValue.text.length == prevValue.text.length + 1 &&
+        currentValue.selection.baseOffset ==
+            prevValue.selection.baseOffset + 1) {
+      final insertedChar = currentValue.text.substring(
+        prevValue.selection.baseOffset,
+        currentValue.selection.baseOffset,
+      );
+      isTyping =
+          insertedChar.isNotEmpty &&
+          RegExp(r'[a-zA-Z]').hasMatch(insertedChar);
+    }
+    _previousValue = currentValue;
+
+    if (_aiSuggestion && Shared().aiResponse == null) {
+      setState(() {
+        _aiSuggestion = false;
+      });
+    }
+    if (widget.lspConfig == null) {
+      final RegExp regExp = RegExp(r'\b\w+\b');
+      final List<String> words = regExp
+          .allMatches(widget.controller.text)
+          .map((m) => m.group(0)!)
+          .toList();
+      String currentWord = '';
+      if (widget.controller.text.isNotEmpty) {
+        final match = RegExp(r'\w+$').firstMatch(widget.controller.text);
+        if (match != null) {
+          currentWord = match.group(0)!;
+        }
       }
-      if (widget.lspConfig == null) {
-        final RegExp regExp = RegExp(r'\b\w+\b');
-        final List<String> words = regExp
-            .allMatches(widget.controller.text)
-            .map((m) => m.group(0)!)
+      _suggestions.clear();
+      for (var i in words) {
+        if (!_suggestions.contains(i) && i != currentWord) {
+          _suggestions.add(i);
+        }
+      }
+      if (prefix.isNotEmpty) {
+        _suggestions = _suggestions
+            .where((s) => s.startsWith(prefix))
             .toList();
-        String currentWord = '';
-        if (widget.controller.text.isNotEmpty) {
-          final match = RegExp(r'\w+$').firstMatch(widget.controller.text);
-          if (match != null) {
-            currentWord = match.group(0)!;
-          }
-        }
-        _suggestions.clear();
-        for (var i in words) {
-          if (!_suggestions.contains(i) && i != currentWord) {
-            _suggestions.add(i);
-          }
-        }
-        if (prefix.isNotEmpty) {
-          _suggestions = _suggestions
-              .where((s) => s.startsWith(prefix))
-              .toList();
-        }
+      }
 
+      if (isTyping &&
+          _suggestions.isNotEmpty &&
+          cursorOffset > 0 &&
+          widget.enableSuggestions &&
+          prefix.isNotEmpty) {
+        _sortSuggestions(prefix);
+        final triggerChar = currentText[cursorOffset - 1];
+        if (!RegExp(r'[a-zA-Z]').hasMatch(triggerChar)) {
+          _hideSuggestionOverlay();
+          return;
+        }
+        if (mounted) {
+          _showSuggestionOverlay();
+        }
+      } else {
+        _hideSuggestionOverlay();
+      }
+    }
+    if (widget.lspConfig != null &&
+        widget.controller.selection.baseOffset > 0 &&
+        widget.enableSuggestions &&
+        _lspReady) {
+      (() async {
+        await widget.lspConfig!.updateDocument(widget.controller.text);
+        final List<LspCompletion> suggestion = await widget.lspConfig!
+            .getCompletions(line, character);
+        _hoverDetails = await widget.lspConfig!.getHover(line, character);
         if (isTyping &&
-            _suggestions.isNotEmpty &&
+            suggestion.isNotEmpty &&
             cursorOffset > 0 &&
-            widget.enableSuggestions &&
             prefix.isNotEmpty) {
+          _suggestions = suggestion;
+          _selected = 0;
           _sortSuggestions(prefix);
           final triggerChar = currentText[cursorOffset - 1];
-          if (!RegExp(r'[a-zA-Z]').hasMatch(triggerChar)) {
+          if (!RegExp(r'[a-zA-Z._$]').hasMatch(triggerChar)) {
             _hideSuggestionOverlay();
             return;
           }
-          if (mounted) {
-            _showSuggestionOverlay();
-          }
+          if (mounted) _showSuggestionOverlay();
         } else {
           _hideSuggestionOverlay();
         }
-      }
-      if (widget.lspConfig != null &&
-          widget.controller.selection.baseOffset > 0 &&
-          widget.enableSuggestions &&
-          _lspReady) {
-        (() async {
-          await widget.lspConfig!.updateDocument(widget.controller.text);
-          final List<LspCompletion> suggestion = await widget.lspConfig!
-              .getCompletions(line, character);
-          _hoverDetails = await widget.lspConfig!.getHover(line, character);
-          if (isTyping &&
-              suggestion.isNotEmpty &&
-              cursorOffset > 0 &&
-              prefix.isNotEmpty) {
-            _suggestions = suggestion;
-            _selected = 0;
-            _sortSuggestions(prefix);
-            final triggerChar = currentText[cursorOffset - 1];
-            if (!RegExp(r'[a-zA-Z._$]').hasMatch(triggerChar)) {
-              _hideSuggestionOverlay();
-              return;
-            }
-            if (mounted) _showSuggestionOverlay();
-          } else {
-            _hideSuggestionOverlay();
-          }
-        })();
-      }
+      })();
+    }
 
-      if (gutterWidth != Shared().gutterWidth) {
+    if (gutterWidth != Shared().gutterWidth) {
+      if (mounted) {
         setState(() => gutterWidth = Shared().gutterWidth);
       }
+    }
 
-      if (_value != widget.controller.text &&
-          (widget.aiCompletion?.enableCompletion ?? false)) {
-        final String text = widget.controller.text;
-        final int cursorPosition = widget.controller.selection.baseOffset;
-        final String codeToSend =
-            "${text.substring(0, cursorPosition)}<|CURSOR|>${text.substring(cursorPosition)}";
+    if (_value != widget.controller.text &&
+        (widget.aiCompletion?.enableCompletion ?? false)) {
+      final String text = widget.controller.text;
+      final int cursorPosition = widget.controller.selection.baseOffset;
+      final String codeToSend =
+          "${text.substring(0, cursorPosition)}<|CURSOR|>${text.substring(cursorPosition)}";
 
-        _debounceTimer?.cancel();
+      _debounceTimer?.cancel();
 
-        if (widget.aiCompletion?.completionType == CompletionType.auto ||
-            widget.aiCompletion?.completionType == CompletionType.mixed) {
-          _debounceTimer = Timer(
-            Duration(milliseconds: widget.aiCompletion!.debounceTime),
-            () async {
-              Shared().aiResponse = await _getCachedResponse(codeToSend);
-              Shared().lastCursorPosition =
-                  widget.controller.selection.baseOffset;
-              setState(() => _aiSuggestion = true);
-            },
-          );
-        }
-        _value = widget.controller.text;
+      if (widget.aiCompletion?.completionType == CompletionType.auto ||
+          widget.aiCompletion?.completionType == CompletionType.mixed) {
+        _debounceTimer = Timer(
+          Duration(milliseconds: widget.aiCompletion!.debounceTime),
+          () async {
+            Shared().aiResponse = await _getCachedResponse(codeToSend);
+            Shared().lastCursorPosition =
+                widget.controller.selection.baseOffset;
+            setState(() => _aiSuggestion = true);
+          },
+        );
       }
-    });
-    super.initState();
+      _value = widget.controller.text;
+    }
   }
 
   @override
@@ -423,6 +427,7 @@ class _CodeCrafterState extends State<CodeCrafter> {
     _debounceTimer?.cancel();
     widget.lspConfig?.closeDocument();
     widget.lspConfig?.dispose();
+    widget.controller.removeListener(controllerListener);
     super.dispose();
   }
 
