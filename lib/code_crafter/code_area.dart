@@ -54,6 +54,12 @@ class CodeCrafter extends StatefulWidget {
   /// `" " * tabSize` spaces will be inserted when the user presses the tab key.
   /// This value us also used for indentation in the [CodeCrafter] widget.
   final int tabSize;
+  
+  /// The inner padding of the editable area inside the [CodeCrafter] widget.
+  ///
+  /// Controls the spacing between the text content and the edges of the editor.
+  /// Defaults to [EdgeInsets.all(0)] if not provided.
+  final EdgeInsets innerPadding;
 
   /// The style for the gutter in the [CodeCrafter] widget.
   final GutterStyle? gutterStyle;
@@ -144,6 +150,7 @@ class CodeCrafter extends StatefulWidget {
     this.autoFocus = false,
     this.readOnly = false,
     this.tabSize = 3,
+    this.innerPadding = EdgeInsets.zero,
     this.editorField,
   });
 
@@ -821,9 +828,13 @@ class _CodeCrafterState extends State<CodeCrafter> {
                     color: widget.editorTheme?['root']?.color ?? Colors.grey,
                   ),
                 )
-              : SizedBox(
+              : Container(
                   height: constraints.maxHeight,
                   width: constraints.maxWidth,
+                  padding: widget.innerPadding, 
+                  color: 
+                    widget.editorTheme?['root']?.backgroundColor ??
+                    Colors.black,
                   child: Stack(
                     children: [
                       GestureDetector(
