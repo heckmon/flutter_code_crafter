@@ -53,6 +53,8 @@ class CodeCrafterController extends TextEditingController {
   int get lineOffset => _currentChunk?.startLine ?? 0;
   ValueNotifier<bool> fileLoading = ValueNotifier(false);
 
+  bool Function(int) foldAt = (_) {return false;};
+
   /// The language mode used for syntax highlighting.
   ///
   /// This is a [Mode] object from the [highlight](https://pub.dev/packages/highlight) package.
@@ -178,6 +180,10 @@ class CodeCrafterController extends TextEditingController {
     }
 
     super.value = newValue;
+  }
+
+  void setFoldAtCallback(bool Function(int index) callback) {
+    foldAt = callback;
   }
 
   Set<int> _findUnmatchedBrackets(String text) {

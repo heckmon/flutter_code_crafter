@@ -66,6 +66,18 @@ class _GutterState extends State<Gutter> {
     setState(() {});
   }
 
+  bool _foldAt(int index) {
+    if (!mounted) return false;
+    final line = _lineStates.value[index];
+    if (line.foldRange == null) return false;
+
+    setState(() {
+      line.foldRange!.isFolded = !line.foldRange!.isFolded;
+      _controller.refresh();
+    });
+    return true;
+  }
+
   @override
   void initState() {
     final lineMetrics = TextPainter(
@@ -80,6 +92,7 @@ class _GutterState extends State<Gutter> {
 
     _listenerFunction = _updateLineStatesAndFolds;
     _controller.addListener(_listenerFunction);
+    _controller.setFoldAtCallback(_foldAt);
 
     _updateLineStatesAndFolds();
     super.initState();
