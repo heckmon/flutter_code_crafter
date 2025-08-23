@@ -107,3 +107,10 @@
 ## 0.2.6
 
 * feat: arbitrarily sized file handling
+
+## 0.2.7
+
+* Feature: codecrafter inner padding
+* Feature: example project
+* Feature: add foldAt to CodeCrafterController
+* Fix: Removed chunk file loading

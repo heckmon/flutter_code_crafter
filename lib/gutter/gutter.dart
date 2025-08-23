@@ -39,15 +39,13 @@ class _GutterState extends State<Gutter> {
     final updatedStates = List.generate(
       _textPainter.computeLineMetrics().length,
       (index) {
-        if (prevLineOffset == _controller.lineOffset &&
-            index < oldStates.length) {
+        if (index < oldStates.length) {
           return oldStates[index];
         } else {
-          return LineState(lineNumber: index + 1 + _controller.lineOffset);
+          return LineState(lineNumber: index + 1);
         }
       },
     );
-    prevLineOffset = _controller.lineOffset;
     lineNumber = _textPainter.computeLineMetrics().length;
     _lineStates.value = updatedStates;
     Shared().lineStates = _lineStates;
@@ -68,7 +66,7 @@ class _GutterState extends State<Gutter> {
 
   bool _foldAt(int index) {
     if (!mounted) return false;
-    final line = _lineStates.value[index];
+    final line = _lineStates.value[index - 1];
     if (line.foldRange == null) return false;
 
     setState(() {

@@ -1,6 +1,6 @@
 name: flutter_code_crafter
 description: "Powerful code editor with AI code completion and LSP support"
-version: 0.2.6
+version: 0.2.7
 homepage: https://github.com/heckmon/flutter_code_crafter
 
 environment:
@@ -19,7 +19,7 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^5.0.0
+  flutter_lints: ^6.0.0
 
 flutter:
   fonts:

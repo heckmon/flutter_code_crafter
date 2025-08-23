@@ -1,35 +1,7 @@
-import 'dart:async';
-import 'dart:convert';
-import 'dart:io';
-import 'dart:math' as math;
-
 import '../utils/utils.dart';
 import '../utils/shared.dart';
 import 'package:flutter/material.dart';
 import 'package:highlight/highlight.dart';
-
-class ChunkConfig {
-  final int chunkSize;
-  final int chunkLineOverlap;
-
-  const ChunkConfig({this.chunkSize = 200, this.chunkLineOverlap = 50});
-}
-
-class FileChunk {
-  final int startLine;
-  final int endLine;
-  final List<String> lines;
-  final int fileStartOffset;
-  final int fileEndOffset;
-
-  FileChunk({
-    required this.startLine,
-    required this.endLine,
-    required this.lines,
-    required this.fileStartOffset,
-    required this.fileEndOffset,
-  });
-}
 
 class CodeCrafterController extends TextEditingController {
   VoidCallback? manualAiCompletion;
@@ -37,23 +9,10 @@ class CodeCrafterController extends TextEditingController {
   Mode? _language;
 
   final textKey = GlobalKey();
-  ScrollController? codeScroll;
-  final List<LineMetrics> _cachedLineMetrics = [];
 
-  bool fileAutoSave = false;
-  Timer? _autoSaveDebounce;
-  String? _filePath;
-  RandomAccessFile? _fileHandle;
-  int? _totalFileSize;
-  List<int>? _lineOffsets;
-  FileChunk? _currentChunk;
-  final ChunkConfig _chunkConfig;
-  bool _isLoadingChunk = false;
-  int? _lastRequestedChunkStart;
-  int get lineOffset => _currentChunk?.startLine ?? 0;
-  ValueNotifier<bool> fileLoading = ValueNotifier(false);
-
-  bool Function(int) foldAt = (_) {return false;};
+  bool Function(int) foldAt = (_) {
+    return false;
+  };
 
   /// The language mode used for syntax highlighting.
   ///
@@ -64,15 +23,6 @@ class CodeCrafterController extends TextEditingController {
   // int? _lastCursorPosition;
   final Map<int, Set<int>> _highlightIndex = {};
   TextStyle? _highlightStyle;
-
-  CodeCrafterController({
-    String? text,
-    Mode? language,
-    ChunkConfig chunkConfig = const ChunkConfig(),
-  }) : _chunkConfig = chunkConfig,
-       _language = language {
-    if (text != null) value = TextEditingValue(text: text);
-  }
 
   set language(Mode? language) {
     if (language == _language) return;
@@ -170,13 +120,6 @@ class CodeCrafterController extends TextEditingController {
         selection: TextSelection.collapsed(offset: newOffset),
       );
       return;
-    }
-
-    if (fileAutoSave) {
-      _autoSaveDebounce?.cancel();
-      _autoSaveDebounce = Timer(const Duration(milliseconds: 750), () {
-        unawaited(saveChunk());
-      });
     }
 
     super.value = newValue;
@@ -655,280 +598,5 @@ class CodeCrafterController extends TextEditingController {
     } else {
       removeChar();
     }
-  }
-
-  Future<void> openFile(String filePath) async {
-    await _closeCurrentFile();
-
-    fileLoading.value = true;
-
-    try {
-      _filePath = filePath;
-      final file = File(filePath);
-
-      if (!await file.exists()) {
-        throw FileSystemException('File not found: $filePath');
-      }
-
-      _fileHandle = await file.open(mode: FileMode.append);
-      _totalFileSize = await _fileHandle!.length();
-
-      await _buildLineOffsetIndex();
-      await _loadChunk(0);
-      codeScroll?.addListener(_onScroll);
-    } catch (e) {
-      await _closeCurrentFile();
-      rethrow;
-    }
-
-    fileLoading.value = false;
-  }
-
-  Future<void> _buildLineOffsetIndex() async {
-    if (_fileHandle == null) return;
-
-    _lineOffsets = [0];
-    await _fileHandle!.setPosition(0);
-
-    final buffer = List<int>.filled(8192, 0);
-    int position = 0;
-
-    while (position < _totalFileSize!) {
-      final bytesRead = await _fileHandle!.readInto(buffer);
-      if (bytesRead == 0) break;
-
-      for (int i = 0; i < bytesRead; i++) {
-        if (buffer[i] == 10) {
-          _lineOffsets!.add(position + i + 1);
-        }
-      }
-      position += bytesRead;
-    }
-  }
-
-  Future<void> saveChunk() async {
-    if (_fileHandle == null || _currentChunk == null) return;
-
-    final newText = text;
-    final encoded = utf8.encode(newText);
-    final start = _currentChunk!.fileStartOffset;
-
-    await _fileHandle!.setPosition(start);
-    await _fileHandle!.writeFrom(encoded);
-  }
-
-  Future<void> _loadChunk(
-    int startLine, {
-    (int, double)? maintainScrollPositionData,
-  }) async {
-    if (_isLoadingChunk || _fileHandle == null || _lineOffsets == null) return;
-
-    final totalLines = _lineOffsets!.length - 1;
-    final actualStartLine = math.max(0, startLine);
-
-    if (_lastRequestedChunkStart == actualStartLine) {
-      return;
-    }
-
-    _isLoadingChunk = true;
-    _lastRequestedChunkStart = actualStartLine;
-
-    try {
-      final endLine = math.min(
-        totalLines,
-        actualStartLine + _chunkConfig.chunkSize,
-      );
-
-      if (actualStartLine >= totalLines) return;
-
-      final startOffset = _lineOffsets![actualStartLine];
-      final endOffset = endLine < totalLines
-          ? _lineOffsets![endLine]
-          : _totalFileSize!;
-
-      await _fileHandle!.setPosition(startOffset);
-      final chunkSize = endOffset - startOffset;
-      final buffer = List<int>.filled(chunkSize, 0);
-      await _fileHandle!.readInto(buffer);
-
-      final chunkText = String.fromCharCodes(buffer);
-      final lines = chunkText.split('\n');
-
-      if (lines.isNotEmpty && lines.last.isEmpty) {
-        lines.removeLast();
-      }
-
-      _currentChunk = FileChunk(
-        startLine: actualStartLine,
-        endLine: endLine,
-        lines: lines,
-        fileStartOffset: startOffset,
-        fileEndOffset: endOffset,
-      );
-
-      if (maintainScrollPositionData != null && codeScroll != null) {
-        if (codeScroll!.hasClients) {
-          final targetScrollOffset =
-              maintainScrollPositionData.$1 * maintainScrollPositionData.$2;
-          final maxScroll = codeScroll!.position.maxScrollExtent;
-          final scrollOffset = math.min(targetScrollOffset, maxScroll);
-          codeScroll!.jumpTo(scrollOffset);
-        }
-      }
-
-      final chunkContent = lines.join('\n');
-      super.value = super.value.copyWith(text: chunkContent);
-    } catch (e) {
-      debugPrint('Error loading chunk: $e');
-      _lastRequestedChunkStart = null;
-    } finally {
-      _isLoadingChunk = false;
-    }
-  }
-
-  void _onScroll() {
-    if (_isLoadingChunk ||
-        _currentChunk == null ||
-        _fileHandle == null ||
-        codeScroll == null ||
-        codeScroll?.hasClients != true) {
-      return;
-    }
-
-    final chunkStartLine = _currentChunk!.startLine;
-    final chunkEndLine = _currentChunk!.endLine;
-    final overlapSize = _chunkConfig.chunkLineOverlap;
-
-    final nextLoadTriggerLine = chunkEndLine - overlapSize;
-    final prevLoadTriggerLine = chunkStartLine == 0
-        ? -1
-        : chunkStartLine + overlapSize;
-
-    EditableTextState? editableTextState;
-
-    void visitor(Element element) {
-      if (element is StatefulElement && element.state is EditableTextState) {
-        editableTextState = element.state as EditableTextState;
-      } else {
-        element.visitChildren(visitor);
-      }
-    }
-
-    final context = textKey.currentContext;
-    if (context != null) {
-      context.visitChildElements(visitor);
-    }
-
-    if (_cachedLineMetrics.isEmpty) {
-      final textStyle = editableTextState!.widget.style;
-
-      final textPainter = TextPainter(
-        text: TextSpan(text: text, style: textStyle),
-        textDirection: TextDirection.ltr,
-      );
-
-      final box = editableTextState!.context.findRenderObject()! as RenderBox;
-      final availableWidth = box.size.width;
-
-      textPainter.layout(maxWidth: availableWidth);
-
-      final lineMetrics = textPainter.computeLineMetrics();
-
-      _cachedLineMetrics.clear();
-      _cachedLineMetrics.addAll(lineMetrics);
-    }
-
-    if (editableTextState != null && _cachedLineMetrics.isNotEmpty) {
-      final scrollBox =
-          codeScroll!.position.context.storageContext.findRenderObject()!
-              as RenderBox;
-      final lineHeight = _cachedLineMetrics[0].height;
-
-      final scrollOffset = codeScroll!.offset;
-      final firstVisibleLineOffset = (scrollOffset / lineHeight).floor();
-
-      final double viewportHeight = scrollBox.size.height;
-      final double visibleBottom = scrollOffset + viewportHeight;
-      final lastVisibleLineOffset = (visibleBottom / lineHeight).floor().clamp(
-        0,
-        _cachedLineMetrics.length - 1,
-      );
-
-      if ((chunkStartLine + firstVisibleLineOffset) >= nextLoadTriggerLine) {
-        final nextChunkStart =
-            _currentChunk!.endLine - (_chunkConfig.chunkLineOverlap * 2);
-        final totalLines = _lineOffsets!.length - 1;
-
-        if (nextChunkStart < totalLines &&
-            _lastRequestedChunkStart != nextChunkStart) {
-          unawaited(
-            _loadChunk(
-              nextChunkStart,
-              maintainScrollPositionData: (
-                firstVisibleLineOffset + chunkStartLine - nextChunkStart,
-                lineHeight,
-              ),
-            ),
-          );
-        }
-      } else if (lastVisibleLineOffset + chunkStartLine <=
-          prevLoadTriggerLine) {
-        final prevChunkStart = math.max(
-          0,
-          _currentChunk!.startLine -
-              (_chunkConfig.chunkSize - (_chunkConfig.chunkLineOverlap * 2)),
-        );
-
-        if (prevChunkStart >= 0 && _lastRequestedChunkStart != prevChunkStart) {
-          unawaited(
-            _loadChunk(
-              prevChunkStart,
-              maintainScrollPositionData: (
-                firstVisibleLineOffset + (_chunkConfig.chunkSize / 2).floor(),
-                lineHeight,
-              ),
-            ),
-          );
-        }
-      }
-    }
-  }
-
-  Future<void> _closeCurrentFile() async {
-    if (_filePath != null) {
-      codeScroll?.removeListener(_onScroll);
-    }
-    value = TextEditingValue(text: "");
-
-    await _fileHandle?.close();
-    _fileHandle = null;
-    _filePath = null;
-    _totalFileSize = null;
-    _lineOffsets = null;
-    _currentChunk = null;
-    _lastRequestedChunkStart = null;
-  }
-
-  String? get currentFilePath => _filePath;
-
-  ChunkConfig get chunkConfig => _chunkConfig;
-
-  Map<String, dynamic>? get chunkInfo {
-    if (_currentChunk == null || _lineOffsets == null) return null;
-
-    return {
-      'startLine': _currentChunk!.startLine,
-      'endLine': _currentChunk!.endLine,
-      'totalLines': _lineOffsets!.length - 1,
-      'chunkLines': _currentChunk!.lines.length,
-      'isFileMode': _filePath != null,
-    };
-  }
-
-  @override
-  void dispose() {
-    unawaited(_closeCurrentFile());
-    _autoSaveDebounce?.cancel();
-    super.dispose();
   }
 }
