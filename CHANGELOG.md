@@ -2,7 +2,6 @@
 
 * Initial release: Powerful code editor with syntax highlighting, AI code completion, built in LSP client and more.
 
-
 ## 0.0.2
 
 * Fixed Text Overflow in LSP suggestion.
@@ -114,3 +113,8 @@
 * Feature: example project
 * Feature: add foldAt to CodeCrafterController
 * Fix: Removed chunk file loading
+
+## 0.2.8
+
+* Fix: Large files crash
+* Enhancement: Batched highlighting

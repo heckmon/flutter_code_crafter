@@ -97,12 +97,12 @@ class CodeCrafterController extends TextEditingController {
       final extraIndent = shouldIndent ? ' ' * Shared().tabSize : '';
       final indent = prevIndent + extraIndent;
       final openToClose = {'{': '}', '(': ')', '[': ']'};
-      final lastChar = prevLine.trimRight().isNotEmpty
-          ? prevLine.trimRight().characters.last
+      final trimmedPrev = prevLine.trimRight();
+      final lastChar = trimmedPrev.isNotEmpty
+          ? trimmedPrev[trimmedPrev.length - 1]
           : null;
-      final nextChar = textAfterCursor.trimLeft().isNotEmpty
-          ? textAfterCursor.trimLeft().characters.first
-          : null;
+      final trimmedNext = textAfterCursor.trimLeft();
+      final nextChar = trimmedNext.isNotEmpty ? trimmedNext[0] : null;
       final isBracketOpen = openToClose.containsKey(lastChar);
       final isNextClosing = isBracketOpen && openToClose[lastChar] == nextChar;
       String newText;
@@ -183,9 +183,9 @@ class CodeCrafterController extends TextEditingController {
     };
     const String openers = '({[';
 
-    if (pos < 0 || pos >= text.characters.length) return null;
+    if (pos < 0 || pos >= text.length) return null;
 
-    final char = text.characters.elementAt(pos);
+    final char = text[pos];
     if (!pairs.containsKey(char)) return null;
 
     final match = pairs[char]!;
@@ -193,17 +193,17 @@ class CodeCrafterController extends TextEditingController {
 
     int depth = 0;
     if (isForward) {
-      for (int i = pos + 1; i < text.characters.length; i++) {
-        if (text.characters.elementAt(i) == char) depth++;
-        if (text.characters.elementAt(i) == match) {
+      for (int i = pos + 1; i < text.length; i++) {
+        if (text[i] == char) depth++;
+        if (text[i] == match) {
           if (depth == 0) return i;
           depth--;
         }
       }
     } else {
       for (int i = pos - 1; i >= 0; i--) {
-        if (text.characters.elementAt(i) == char) depth++;
-        if (text.characters.elementAt(i) == match) {
+        if (text[i] == char) depth++;
+        if (text[i] == match) {
           if (depth == 0) return i;
           depth--;
         }
@@ -218,61 +218,6 @@ class CodeCrafterController extends TextEditingController {
     TextStyle? style,
     bool? withComposing,
   }) {
-    final int cursorPosition = selection.baseOffset;
-    int? bracket1, bracket2;
-
-    if (cursorPosition >= 0 && cursorPosition <= text.length) {
-      final String? before = cursorPosition > 0
-          ? text[cursorPosition - 1]
-          : null;
-      final String? after = cursorPosition < text.length
-          ? text[cursorPosition]
-          : null;
-      final int? pos = (before != null && '{}[]()'.contains(before))
-          ? cursorPosition - 1
-          : (after != null && '{}[]()'.contains(after))
-          ? cursorPosition
-          : null;
-
-      if (pos != null) {
-        final match = _findMatchingBracket(text, pos);
-        if (match != null) {
-          bracket1 = pos;
-          bracket2 = match;
-        }
-      }
-    }
-
-    final List<String> lines = text.isNotEmpty ? text.split("\n") : [];
-    final List<FoldRange> foldedRanges = Shared().lineStates.value
-        .where((line) => line.foldRange?.isFolded == true)
-        .map((line) => line.foldRange!)
-        .toList();
-
-    foldedRanges.sort((a, b) => a.startLine.compareTo(b.startLine));
-    final filteredFolds = <FoldRange>[];
-    for (final FoldRange fold in foldedRanges) {
-      bool isNested = filteredFolds.any(
-        (parent) =>
-            fold.startLine >= parent.startLine &&
-            fold.endLine <= parent.endLine,
-      );
-      if (!isNested) filteredFolds.add(fold);
-    }
-    filteredFolds.sort((a, b) => b.startLine.compareTo(a.startLine));
-
-    for (final fold in filteredFolds) {
-      int start = fold.startLine - 1;
-      int end = fold.endLine;
-      if (start >= 0 && end <= lines.length && start < end) {
-        lines[start] =
-            "${lines[start]}...${'\u200D' * ((lines.sublist(start + 1, end).join('\n').length) - 2)}";
-        lines.removeRange(start + 1, end);
-      }
-    }
-
-    String newText = lines.join('\n');
-
     TextStyle baseStyle = TextStyle(
       color: editorTheme['root']?.color,
       height: 1.5,
@@ -282,11 +227,14 @@ class CodeCrafterController extends TextEditingController {
       baseStyle = baseStyle.merge(textStyle);
     }
 
+    final int cursorPosition = selection.baseOffset;
+    int? bracket1, bracket2;
+
     if (Shared().aiResponse != null &&
-        newText.isNotEmpty &&
+        text.isNotEmpty &&
         Shared().aiResponse!.isNotEmpty) {
-      final String textBeforeCursor = newText.substring(0, cursorPosition);
-      final String textAfterCursor = newText.substring(cursorPosition);
+      final String textBeforeCursor = text.substring(0, cursorPosition);
+      final String textAfterCursor = text.substring(cursorPosition);
 
       final bool atLineEnd =
           textAfterCursor.isEmpty ||
@@ -294,10 +242,10 @@ class CodeCrafterController extends TextEditingController {
           textAfterCursor.trim().isEmpty;
 
       if (!atLineEnd) {
-        return TextSpan(text: newText, style: baseStyle);
+        return TextSpan(text: text, style: baseStyle);
       }
       final String lastTypedChar = textBeforeCursor.isNotEmpty
-          ? textBeforeCursor.characters.last.replaceAll("\n", '')
+          ? textBeforeCursor[textBeforeCursor.length - 1].replaceAll("\n", '')
           : '';
       final List<Node>? beforeCursorNodes = highlight
           .parse(textBeforeCursor, language: _langId)
@@ -350,7 +298,58 @@ class CodeCrafterController extends TextEditingController {
       }
     }
 
-    final List<Node>? nodes = highlight.parse(newText, language: _langId).nodes;
+    final List<String> lines = text.isNotEmpty ? text.split("\n") : [];
+
+    if (cursorPosition >= 0 && cursorPosition <= text.length) {
+      final String? before = cursorPosition > 0
+          ? text[cursorPosition - 1]
+          : null;
+      final String? after = cursorPosition < text.length
+          ? text[cursorPosition]
+          : null;
+      final int? pos = (before != null && '{}[]()'.contains(before))
+          ? cursorPosition - 1
+          : (after != null && '{}[]()'.contains(after))
+          ? cursorPosition
+          : null;
+
+      if (pos != null) {
+        final match = _findMatchingBracket(text, pos);
+        if (match != null) {
+          bracket1 = pos;
+          bracket2 = match;
+        }
+      }
+    }
+
+    final List<FoldRange> foldedRanges = Shared().lineStates.value
+        .where((line) => line.foldRange?.isFolded == true)
+        .map((line) => line.foldRange!)
+        .toList();
+
+    foldedRanges.sort((a, b) => a.startLine.compareTo(b.startLine));
+    final filteredFolds = <FoldRange>[];
+    for (final FoldRange fold in foldedRanges) {
+      bool isNested = filteredFolds.any(
+        (parent) =>
+            fold.startLine >= parent.startLine &&
+            fold.endLine <= parent.endLine,
+      );
+      if (!isNested) filteredFolds.add(fold);
+    }
+    filteredFolds.sort((a, b) => b.startLine.compareTo(a.startLine));
+
+    for (final fold in filteredFolds) {
+      int start = fold.startLine - 1;
+      int end = fold.endLine;
+      if (start >= 0 && end <= lines.length && start < end) {
+        lines[start] =
+            "${lines[start]}...${'\u200D' * ((lines.sublist(start + 1, end).join('\n').length) - 2)}";
+        lines.removeRange(start + 1, end);
+      }
+    }
+
+    final List<Node>? nodes = highlight.parse(text, language: _langId).nodes;
     final Set<int> unmatchedBrackets = _findUnmatchedBrackets(text);
     if (nodes != null && editorTheme.isNotEmpty) {
       return TextSpan(
@@ -381,6 +380,7 @@ class CodeCrafterController extends TextEditingController {
           final lineChars = line.characters;
           offset +=
               lineChars.length + (lineIdx == nodeLines.length - 1 ? 0 : 1);
+
           final match = RegExp(r'^(\s*)').firstMatch(line);
           final leading = match?.group(0) ?? '';
           final indentLen = leading.length;
@@ -388,10 +388,15 @@ class CodeCrafterController extends TextEditingController {
           final Set<int> guideCols = {
             for (int k = 0; k < indentLvl; k++) k * Shared().tabSize,
           };
+
+          String accumulatedText = '';
+          TextStyle? currentStyle;
+
           for (int col = 0; col < lineChars.length; col++) {
             final globalIdx = startOfLineOffset + col;
             String ch = lineChars.elementAt(col);
             if (ch == ' ' && guideCols.contains(col)) ch = '│';
+
             final bool isMatch = globalIdx == b1 || globalIdx == b2;
             final bool isUnmatched = unmatched.contains(globalIdx);
 
@@ -469,7 +474,19 @@ class CodeCrafterController extends TextEditingController {
               }
             }
 
-            spans.add(TextSpan(text: ch, style: charStyle));
+            if (currentStyle == charStyle && accumulatedText.isNotEmpty) {
+              accumulatedText += ch;
+            } else {
+              if (accumulatedText.isNotEmpty) {
+                spans.add(TextSpan(text: accumulatedText, style: currentStyle));
+              }
+              accumulatedText = ch;
+              currentStyle = charStyle;
+            }
+          }
+
+          if (accumulatedText.isNotEmpty) {
+            spans.add(TextSpan(text: accumulatedText, style: currentStyle));
           }
 
           if (lineIdx != nodeLines.length - 1) {
