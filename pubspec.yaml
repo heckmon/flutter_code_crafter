@@ -1,10 +1,10 @@
 name: flutter_code_crafter
 description: "Powerful code editor with AI code completion and LSP support"
-version: 0.2.8
+version: 0.2.9
 homepage: https://github.com/heckmon/flutter_code_crafter
 
 environment:
-  sdk: ^3.8.1
+  sdk: ^3.9.0
   flutter: ">=1.17.0"
 
 dependencies:

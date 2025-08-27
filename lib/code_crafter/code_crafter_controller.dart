@@ -377,10 +377,7 @@ class CodeCrafterController extends TextEditingController {
         for (int lineIdx = 0; lineIdx < nodeLines.length; lineIdx++) {
           final line = nodeLines[lineIdx];
           final startOfLineOffset = offset;
-          final lineChars = line.characters;
-          offset +=
-              lineChars.length + (lineIdx == nodeLines.length - 1 ? 0 : 1);
-
+          offset += line.length + (lineIdx == nodeLines.length - 1 ? 0 : 1);
           final match = RegExp(r'^(\s*)').firstMatch(line);
           final leading = match?.group(0) ?? '';
           final indentLen = leading.length;
@@ -392,9 +389,9 @@ class CodeCrafterController extends TextEditingController {
           String accumulatedText = '';
           TextStyle? currentStyle;
 
-          for (int col = 0; col < lineChars.length; col++) {
+          for (int col = 0; col < line.length; col++) {
             final globalIdx = startOfLineOffset + col;
-            String ch = lineChars.elementAt(col);
+            String ch = line[col];
             if (ch == ' ' && guideCols.contains(col)) ch = '│';
 
             final bool isMatch = globalIdx == b1 || globalIdx == b2;

@@ -118,3 +118,7 @@
 
 * Fix: Large files crash
 * Enhancement: Batched highlighting
+
+## 0.2.9
+
+* Fix: Removed grapheme characters
