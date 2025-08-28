@@ -122,3 +122,7 @@
 ## 0.2.9
 
 * Fix: Removed grapheme characters
+
+## 0.3.0
+
+* Fix: folding issue

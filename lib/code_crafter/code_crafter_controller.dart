@@ -349,7 +349,9 @@ class CodeCrafterController extends TextEditingController {
       }
     }
 
-    final List<Node>? nodes = highlight.parse(text, language: _langId).nodes;
+    final newText = lines.join('\n');
+
+    final List<Node>? nodes = highlight.parse(newText, language: _langId).nodes;
     final Set<int> unmatchedBrackets = _findUnmatchedBrackets(text);
     if (nodes != null && editorTheme.isNotEmpty) {
       return TextSpan(
@@ -357,7 +359,7 @@ class CodeCrafterController extends TextEditingController {
         children: _convert(nodes, 0, bracket1, bracket2, unmatchedBrackets),
       );
     } else {
-      return TextSpan(text: text, style: textStyle);
+      return TextSpan(text: newText, style: textStyle);
     }
   }
 
@@ -377,7 +379,10 @@ class CodeCrafterController extends TextEditingController {
         for (int lineIdx = 0; lineIdx < nodeLines.length; lineIdx++) {
           final line = nodeLines[lineIdx];
           final startOfLineOffset = offset;
-          offset += line.length + (lineIdx == nodeLines.length - 1 ? 0 : 1);
+          final lineChars = line.characters;
+          offset +=
+              lineChars.length + (lineIdx == nodeLines.length - 1 ? 0 : 1);
+
           final match = RegExp(r'^(\s*)').firstMatch(line);
           final leading = match?.group(0) ?? '';
           final indentLen = leading.length;
@@ -389,9 +394,9 @@ class CodeCrafterController extends TextEditingController {
           String accumulatedText = '';
           TextStyle? currentStyle;
 
-          for (int col = 0; col < line.length; col++) {
+          for (int col = 0; col < lineChars.length; col++) {
             final globalIdx = startOfLineOffset + col;
-            String ch = line[col];
+            String ch = lineChars.elementAt(col);
             if (ch == ' ' && guideCols.contains(col)) ch = '│';
 
             final bool isMatch = globalIdx == b1 || globalIdx == b2;
