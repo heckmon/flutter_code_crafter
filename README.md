@@ -1,9 +1,9 @@
 A powerful and feature-rich alternative for [flutter_code_editor](https://pub.dev/packages/flutter_code_editor) and [code_text_field](https://pub.dev/packages/code_text_field). Designed to bring a seamless and efficient coding experience.
 
 
-> [!NOTE]
->
-> This package is originally developed as part of an Android IDE app that I'm currently working on, so it's optimized for mobile use. PC specific features like extra keyboard shortcuts aren't included by default. If you'd like to add support for those, feel free to open a pull request. I'm currently tied up with college and academics, contributions are welcome!
+> [!WARNING]
+> **This package is outdated.** A better and faster alternative, `code_forge`, is now available at [https://github.com/heckmon/code_forge](https://github.com/heckmon/code_forge). It uses rope data structure and low-level Flutter RenderBox and ParagraphBuilder APIs instead of Flutter's built-in `TextField`.
+
 
 [![pub package](https://img.shields.io/pub/v/flutter_code_crafter.svg?cacheSeconds=60)](https://pub.dev/packages/flutter_code_crafter)
 ![GitHub license](https://img.shields.io/github/license/heckmon/flutter_code_crafter.svg)
